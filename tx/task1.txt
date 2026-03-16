@@ -1,0 +1,273 @@
+PHASE 0 — PROJECT INITIALIZATION & TOOLING
+Objective
+
+Create a running backend skeleton with all core infrastructure connected, but no business logic.
+
+This phase proves that:
+
+The app can boot
+
+Config is loaded correctly
+
+PostgreSQL and Redis are reachable
+
+0.1 Project Initialization
+Instructions
+
+Create a new NestJS project using the Nest CLI
+
+Use npm
+
+Enable TypeScript (default)
+
+Name the project clearly (e.g., market-backend)
+
+Expected Outcome
+
+src/ directory exists
+
+App starts with npm run start:dev
+
+0.2 Dependency Installation
+The AI / Developer MUST install:
+Core
+
+@nestjs/config
+
+class-validator
+
+class-transformer
+
+Database
+
+prisma
+
+@prisma/client
+
+Authentication
+
+bcrypt
+
+jsonwebtoken
+
+Redis & Queues
+
+ioredis
+
+bullmq
+
+Real-time
+
+@nestjs/websockets
+
+socket.io
+
+Rules
+
+No extra libraries
+
+No “helper” frameworks
+
+No ORMs besides Prisma
+
+0.3 Environment Configuration
+Instructions
+
+Create the following files:
+
+.env
+
+.env.example
+
+Variables That MUST Exist
+APP_PORT=
+
+DATABASE_URL=
+
+REDIS_URL=
+
+JWT_ACCESS_SECRET=
+JWT_REFRESH_SECRET=
+
+KORAH_PUBLIC_KEY=
+KORAH_SECRET_KEY=
+KORAH_WEBHOOK_SECRET=
+
+MAP_PROVIDER=
+MAP_API_KEY=
+
+R2_ACCOUNT_ID=
+R2_ACCESS_KEY=
+R2_SECRET_KEY=
+R2_BUCKET_NAME=
+
+Mandatory Rules
+
+No module may call process.env directly
+
+All environment access must go through a config service
+
+Missing variables must crash the app at startup
+
+0.4 Health Check
+Instructions
+
+Implement a /health endpoint
+
+It must return:
+
+App status
+
+Database connection status
+
+Redis connection status
+
+Expected Outcome
+
+If /health responds correctly, Phase 0 is complete.
+
+PHASE 1 — INFRASTRUCTURE FOUNDATION
+
+This phase builds systems that every other module depends on.
+
+No business logic.
+No marketplace features.
+
+1.1 Config Module
+Purpose
+
+Central, validated configuration access.
+
+Instructions
+
+Create a config module
+
+Load environment variables
+
+Validate required keys
+
+Expose typed getters (e.g., getDatabaseConfig())
+
+Forbidden
+
+Hardcoded secrets
+
+Environment access outside this module
+
+1.2 Database Module (PostgreSQL + Prisma)
+Purpose
+
+Single source of persistent truth.
+
+Instructions
+
+Initialize Prisma
+
+Create Prisma schema
+
+Connect to PostgreSQL
+
+Register Prisma client as a provider
+
+Allowed Models (ONLY THESE)
+
+User
+
+RefreshToken (if refresh tokens are persisted)
+
+Explicitly Forbidden (FOR NOW)
+
+Orders
+
+Stores
+
+Products
+
+Payments
+
+Riders
+
+These come later to avoid schema chaos.
+
+1.3 Redis Module
+Purpose
+
+Ephemeral state and async coordination.
+
+Instructions
+
+Initialize Redis client
+
+Expose Redis service
+
+Support:
+
+Key-value operations
+
+Pub/Sub
+
+Queue integration
+
+Rules
+
+Redis is NOT a database
+
+No permanent data stored here
+
+1.4 Global Error Handling
+Instructions
+
+Implement a global exception filter
+
+Standardize error responses:
+
+message
+
+code
+
+timestamp
+
+Hide stack traces in production
+
+1.5 Validation & Request Pipeline
+Instructions
+
+Enable global validation pipes
+
+Enforce DTO validation
+
+Strip unknown fields from requests
+
+Phase 1 Completion Criteria
+
+Phase 1 is complete when:
+
+App boots cleanly
+
+Config is validated
+
+Prisma connects
+
+Redis connects
+
+Global error handling works
+
+No business endpoints exist yet
+
+WHERE WE STOP HERE
+
+We stop intentionally at Phase 1.
+
+Next, in the following step, I will:
+
+Build Phase 2 (Auth + Users) with the same level of precision
+
+Decide which endpoints aggregate data and which do not
+
+Include:
+
+Forgot password flow (yes, it does require backend support)
+
+Token lifecycle rules
+
+Email/magic-link responsibilities (without email provider lock-in)

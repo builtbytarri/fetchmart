@@ -1,0 +1,389 @@
+PHASE 4 — RIDERS, DELIVERY & REAL-TIME COORDINATION
+PHASE OBJECTIVE
+
+This phase introduces movement, real-time state, and logistics.
+
+After this phase:
+
+Riders exist as first-class actors
+
+Riders broadcast GPS location
+
+Orders can be assigned to riders
+
+Assignment is automatic with manual fallback
+
+Customers and stores receive live updates
+
+Redis-backed real-time state exists
+
+WebSocket contracts are enforced
+
+This phase does not include:
+
+Payment settlement
+
+File uploads
+
+Analytics
+
+Admin dashboards
+
+4.1 RIDERS MODULE
+Purpose
+
+Represent delivery agents capable of fulfilling orders.
+
+A Rider:
+
+Is a user with role = RIDER
+
+Can toggle availability
+
+Has real-time location
+
+Can be assigned orders
+
+4.1.1 Rider Data Model (Prisma Guidance)
+
+A Rider MUST include:
+
+id
+
+userId
+
+isAvailable
+
+currentLatitude
+
+currentLongitude
+
+lastPingAt
+
+createdAt
+
+updatedAt
+
+This table is separate from users to avoid role pollution.
+
+4.1.2 Rider Endpoints
+POST   /riders/onboard
+PATCH  /riders/availability
+POST   /riders/location
+GET    /riders/me
+
+4.1.3 POST /riders/onboard
+Who Can Call
+
+Authenticated user with role = RIDER
+
+Behavior
+
+Create rider profile
+
+Initialize availability = false
+
+No admin approval in MVP
+
+4.1.4 PATCH /riders/availability
+Behavior
+
+Toggle availability (true/false)
+
+Update Redis presence index
+
+Redis Side Effect
+riders:available → GEOSET (lat, lng)
+
+
+This allows proximity queries.
+
+4.1.5 POST /riders/location
+Behavior
+
+Update rider GPS coordinates
+
+Persist to Redis immediately
+
+Persist to DB asynchronously (background job)
+
+Engineering Decision:
+Redis is the source of truth for live location.
+PostgreSQL is eventual consistency.
+
+4.2 DELIVERY ASSIGNMENT ENGINE
+Purpose
+
+Automatically assign riders to orders based on proximity and availability.
+
+4.2.1 Automatic Assignment Flow
+
+Triggered when:
+
+Order status becomes READY
+
+Steps:
+
+Query Redis for nearby available riders
+
+Rank by distance
+
+Assign first match
+
+Lock assignment
+
+Update order → ASSIGNED
+
+Emit WebSocket events
+
+4.2.2 Manual Fallback Assignment
+Endpoint
+POST /orders/:orderId/assign-rider
+
+Who Can Call
+
+Store owner
+
+Behavior
+
+Provide riderId explicitly
+
+Validate availability
+
+Override automatic engine
+
+This exists for:
+
+Rider shortages
+
+Operational emergencies
+
+MVP resilience
+
+4.2.3 Assignment Data Model
+
+Order receives:
+
+riderId
+
+assignedAt
+
+Assignment is immutable once accepted.
+
+4.3 REAL-TIME COMMUNICATION (WEBSOCKETS)
+Purpose
+
+Enable live updates across:
+
+Customer
+
+Store
+
+Rider
+
+4.3.1 WebSocket Infrastructure
+
+WebSocket Gateway (NestJS)
+
+Redis Pub/Sub backend
+
+Authenticated connections only
+
+4.3.2 Channels
+user:{userId}
+store:{storeId}
+rider:{riderId}
+order:{orderId}
+
+4.3.3 Events to Emit
+Event	Payload
+order_status_changed	orderId, newStatus
+rider_assigned	orderId, riderSummary
+rider_location_update	lat, lng
+delivery_completed	orderId
+4.3.4 Security Rules
+
+Riders cannot subscribe to customer channels
+
+Customers cannot subscribe to rider channels
+
+Order channels require order ownership
+
+Enforced during socket handshake.
+
+4.4 DELIVERY FLOW (END-TO-END)
+Order READY
+→ Assignment Engine
+→ Rider Assigned
+→ Rider ACCEPTS
+→ Rider EN ROUTE
+→ Rider ARRIVED
+→ COMPLETED
+
+
+Each transition:
+
+Updates DB
+
+Emits WebSocket event
+
+Writes audit log
+
+PHASE 4 COMPLETION CRITERIA
+
+Phase 4 is complete when:
+
+Riders can onboard
+
+Riders broadcast location
+
+Orders auto-assign riders
+
+Manual fallback exists
+
+Live updates work
+
+Redis powers real-time state
+
+PHASE 5 — PAYMENTS, STORAGE, BACKGROUND JOBS & HARDENING
+
+This is the final foundational phase.
+
+5.1 PAYMENT MODULE (KORAH PAY VIA INTERFACE)
+Purpose
+
+Abstract payment processing behind a provider interface.
+
+5.1.1 Payment Interface Contract
+initiatePayment(order)
+verifyPayment(reference)
+refundPayment(reference)
+
+
+Korah Pay implements this contract.
+
+5.1.2 Payment Flow
+
+Order CREATED
+
+Payment initiated
+
+Payment verified (webhook or polling)
+
+Order → PAID
+
+Emit event
+
+5.1.3 Webhooks
+POST /payments/webhook/korah
+
+
+Validate signature
+
+Idempotent handling
+
+Update order status
+
+5.2 FILE STORAGE — CLOUDFLARE R2
+Purpose
+
+Store:
+
+Store logos
+
+Product images
+
+Rider documents (future)
+
+5.2.1 Storage Strategy
+
+Cloudflare R2
+
+Signed upload URLs
+
+Public read via CDN
+
+5.2.2 Upload Flow
+
+Client requests upload URL
+
+Backend signs URL
+
+Client uploads directly
+
+Backend stores metadata
+
+No file passes through backend memory.
+
+5.3 EMAIL DELIVERY SYSTEM (LOCKED)
+5.3.1 Architecture
+EmailService (interface)
+→ ProviderAdapter
+→ HTML Template Engine
+→ Variable Injection
+
+5.3.2 Templates
+
+Stored as .html files
+
+Variables injected server-side
+
+Example variables:
+
+{{user_name}}
+{{reset_link}}
+{{order_id}}
+
+5.3.3 Email Types
+
+Verify Email
+
+Password Reset
+
+Order Confirmation
+
+Rider Assigned
+
+5.4 BACKGROUND JOBS (REDIS QUEUES)
+Jobs Include
+
+Email sending
+
+Location persistence
+
+Payment verification
+
+Cleanup tasks
+
+Tools
+
+BullMQ
+
+Redis
+
+5.5 HARDENING & GOVERNANCE
+Required
+
+Input validation everywhere
+
+Rate limiting
+
+Idempotency keys
+
+Audit logging
+
+Environment separation
+
+FINAL SYSTEM CHARACTER
+
+Modular monolith
+
+AI-friendly
+
+Human-readable
+
+Replaceable providers
+
+MVP-safe
+
+Scale-ready

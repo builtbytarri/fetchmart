@@ -1,0 +1,207 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  CUSTOMER
+  STORE
+  RIDER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+model User {
+  id           String     @id @default(uuid())
+  email        String     @unique
+  passwordHash String     @map("password_hash")
+  role         UserRole
+  name         String
+  phone        String?
+  address      String?
+  latitude     Float?
+  longitude    Float?
+  status       UserStatus @default(ACTIVE)
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  refreshTokens       RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
+  store               Store?
+  orders              Order[]
+  rider               Rider?
+
+  @@map("users")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique @map("token_hash")
+  userId    String    @map("user_id")
+  expiresAt DateTime  @map("expires_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  usedAt    DateTime? @map("used_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_reset_tokens")
+}
+
+model PhoneOtp {
+  id        String    @id @default(uuid())
+  phone     String
+  code      String
+  expiresAt DateTime  @map("expires_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  verifiedAt DateTime? @map("verified_at")
+
+  @@index([phone])
+  @@map("phone_otps")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  revokedAt DateTime? @map("revoked_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+// ==================== PHASE 3 MODELS ====================
+
+model Store {
+  id           String   @id @default(uuid())
+  ownerUserId  String   @unique @map("owner_user_id")
+  name         String
+  description  String?
+  latitude     Float
+  longitude    Float
+  isOpen       Boolean  @default(false) @map("is_open")
+  openingHours Json?    @map("opening_hours")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  owner      User       @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  products   Product[]
+  orders     Order[]
+  categories Category[]
+
+  @@map("stores")
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  storeId   String   @map("store_id")
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  store    Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@unique([storeId, name])
+  @@map("categories")
+}
+
+model Product {
+  id            String    @id @default(uuid())
+  storeId       String    @map("store_id")
+  name          String
+  description   String?
+  price         Decimal   @db.Decimal(10, 2)
+  stockQuantity Int       @default(0) @map("stock_quantity")
+  categoryId    String?   @map("category_id")
+  imageUrl      String?   @map("image_url")
+  isAvailable   Boolean   @default(true) @map("is_available")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  store      Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  category   Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  orderItems OrderItem[]
+
+  @@map("products")
+}
+
+enum OrderStatus {
+  CREATED
+  PAID
+  STORE_ACCEPTED
+  PREPARING
+  READY
+  ASSIGNED
+  PICKED_UP
+  EN_ROUTE
+  ARRIVED
+  COMPLETED
+  CANCELLED
+}
+
+model Order {
+  id               String      @id @default(uuid())
+  customerUserId   String      @map("customer_user_id")
+  storeId          String      @map("store_id")
+  riderId          String?     @map("rider_id")
+  status           OrderStatus @default(CREATED)
+  totalAmount      Decimal     @db.Decimal(10, 2) @map("total_amount")
+  paymentReference String?     @map("payment_reference")
+  assignedAt       DateTime?   @map("assigned_at")
+  createdAt        DateTime    @default(now()) @map("created_at")
+  updatedAt        DateTime    @updatedAt @map("updated_at")
+
+  customer   User        @relation(fields: [customerUserId], references: [id])
+  store      Store       @relation(fields: [storeId], references: [id])
+  rider      Rider?      @relation("RiderOrders", fields: [riderId], references: [id])
+  orderItems OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String  @id @default(uuid())
+  orderId     String  @map("order_id")
+  productId   String  @map("product_id")
+  productName String  @map("product_name")
+  unitPrice   Decimal @db.Decimal(10, 2) @map("unit_price")
+  quantity    Int
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+// ==================== PHASE 4 MODELS ====================
+
+model Rider {
+  id               String    @id @default(uuid())
+  userId           String    @unique @map("user_id")
+  isAvailable      Boolean   @default(false) @map("is_available")
+  currentLatitude  Float?    @map("current_latitude")
+  currentLongitude Float?    @map("current_longitude")
+  lastPingAt       DateTime? @map("last_ping_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders Order[] @relation("RiderOrders")
+
+  @@map("riders")
+}

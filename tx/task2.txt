@@ -1,0 +1,362 @@
+PHASE 2 — IDENTITY, ACCESS & COMMUNICATION FOUNDATION
+PHASE OBJECTIVE
+
+This phase establishes:
+
+Who exists in the system
+
+How they authenticate
+
+What role they have
+
+How access is enforced
+
+How identity-related communication (email) is handled
+
+After this phase:
+
+Users can register, log in, refresh tokens, and log out
+
+Roles are enforced globally
+
+Password recovery is possible
+
+Email delivery exists as an abstraction, not a concrete provider
+
+No marketplace logic yet.
+
+2.1 AUTH MODULE
+Purpose
+
+Handle:
+
+User registration
+
+Authentication
+
+Token lifecycle
+
+Password recovery initiation
+
+This module does not:
+
+Manage profiles
+
+Manage roles beyond assignment
+
+Send emails directly (delegates to email module)
+
+2.1.1 Endpoints to Implement
+POST /auth/register
+POST /auth/login
+POST /auth/refresh
+POST /auth/logout
+POST /auth/forgot-password
+POST /auth/reset-password
+
+
+No other auth endpoints are allowed in MVP.
+
+2.1.2 Registration Flow (POST /auth/register)
+Input Requirements
+
+email
+
+password
+
+role (CUSTOMER | STORE | RIDER)
+
+name
+
+phone (optional but recommended)
+
+Instructions
+
+Validate input via DTO
+
+Hash password using bcrypt
+
+Create User record
+
+Assign role (immutable)
+
+Issue access token
+
+Issue refresh token
+
+Rules
+
+Role cannot be changed after creation
+
+No auto-creation of store or rider profile here
+
+No email verification in MVP (can be added later)
+
+2.1.3 Login Flow (POST /auth/login)
+Instructions
+
+Validate credentials
+
+Reject inactive or blocked users
+
+Issue:
+
+Access token (short-lived)
+
+Refresh token (long-lived)
+
+Rules
+
+Tokens are JWT
+
+Access token contains:
+
+userId
+
+role
+
+Refresh token must be revocable
+
+2.1.4 Refresh Token Flow (POST /auth/refresh)
+Instructions
+
+Validate refresh token
+
+Rotate refresh token
+
+Issue new access token
+
+Rules
+
+Old refresh token is invalidated
+
+Compromised tokens must be revocable
+
+2.1.5 Logout (POST /auth/logout)
+Instructions
+
+Invalidate refresh token
+
+Do not blacklist access tokens (they expire naturally)
+
+2.2 PASSWORD RECOVERY (EMAIL-DEPENDENT)
+
+This is where email abstraction is mandatory.
+
+2.2.1 Forgot Password (POST /auth/forgot-password)
+Input
+
+email
+
+Instructions
+
+Verify user exists
+
+Generate secure, time-limited reset token
+
+Persist token (hashed) with expiry
+
+Generate reset link
+
+Delegate email sending to Email Module
+
+Rules
+
+Same response whether email exists or not (security)
+
+Token must expire (e.g., 15–30 minutes)
+
+2.2.2 Reset Password (POST /auth/reset-password)
+Input
+
+reset token
+
+new password
+
+Instructions
+
+Validate token and expiry
+
+Hash new password
+
+Invalidate all existing refresh tokens
+
+Delete reset token
+
+2.3 USERS MODULE
+Purpose
+
+Represent the identity and profile of a system user.
+
+This module does NOT:
+
+Handle authentication
+
+Handle payments
+
+Handle orders
+
+2.3.1 Endpoints
+GET   /users/me
+PATCH /users/me
+
+
+No user listing endpoints.
+
+2.3.2 User Schema (MINIMUM)
+
+The Prisma User model MUST include:
+
+id
+
+email
+
+passwordHash
+
+role
+
+name
+
+phone
+
+status (ACTIVE | SUSPENDED)
+
+createdAt
+
+updatedAt
+
+2.3.3 GET /users/me
+Behavior
+
+Return the authenticated user’s profile
+
+Exclude sensitive fields (password hash, tokens)
+
+This endpoint aggregates user data, and that is acceptable because:
+
+It is self-access only
+
+It maps directly to the “Profile” screen in the app
+
+2.3.4 PATCH /users/me
+Behavior
+
+Update allowed fields only:
+
+name
+
+phone
+
+Role, email, and status are immutable here
+
+2.4 AUTHORIZATION (RBAC)
+Purpose
+
+Enforce role-based access globally and consistently.
+
+Instructions
+
+Implement a Role enum:
+
+CUSTOMER
+STORE
+RIDER
+
+
+Implement RBAC guards
+
+Apply guards at controller or route level
+
+Rules
+
+No role checks inside service logic
+
+No inline if (role === …) in controllers
+
+Guards must be reusable and declarative
+
+2.5 EMAIL DELIVERY MODULE (ABSTRACTION)
+
+This is a critical infrastructure module.
+
+2.5.1 Purpose
+
+Provide a generic email-sending capability without locking into:
+
+SendGrid
+
+AWS SES
+
+Mailgun
+
+Resend
+
+Any other provider
+
+2.5.2 Module Responsibilities
+
+Define an EmailProvider interface
+
+Handle email templates
+
+Send transactional emails
+
+Log send attempts (optional in MVP)
+
+2.5.3 Email Provider Interface (Conceptual)
+
+The AI must define an interface similar to:
+
+sendEmail(to, subject, template, data)
+
+No provider-specific logic is allowed outside provider implementations.
+
+2.5.4 MVP Email Types
+
+At minimum, support:
+
+Password reset email
+
+Future-ready for:
+
+Email verification
+
+Order notifications
+
+2.5.5 Provider Selection
+
+For MVP:
+
+Implement a basic SMTP or mock provider
+
+Real provider can be swapped later without refactor
+
+2.6 SECURITY RULES (GLOBAL)
+
+These rules apply to all modules from now on:
+
+All incoming data must be validated
+
+All sensitive actions require authentication
+
+All role-restricted actions require RBAC guard
+
+No sensitive data in logs
+
+No secrets in code
+
+PHASE 2 COMPLETION CRITERIA
+
+Phase 2 is complete when:
+
+Users can register and log in
+
+Tokens are issued and refreshed
+
+Roles are enforced
+
+Password recovery works end-to-end
+
+Emails are sent via abstraction
+
+No marketplace logic exists yet

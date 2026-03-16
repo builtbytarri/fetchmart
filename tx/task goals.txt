@@ -1,0 +1,132 @@
+BACKEND BUILD SPECIFICATION
+
+Fetchmart Delivery & Logistics Platform (MVP)
+
+1. APPLICATION OVERVIEW (MANDATORY CONTEXT)
+1.1 What This Application Is
+
+This backend powers a multi-role, real-time marketplace and delivery platform, similar in operational behavior to platforms like Chowdeck, Glovo, or Uber Eats, but tailored for local markets.
+
+It supports three distinct user roles within a single mobile application:
+
+Customer – browses stores, places orders, pays, and tracks delivery
+
+Store – manages inventory, accepts or rejects orders
+
+Rider – receives delivery assignments, navigates pickups and drop-offs
+
+All three roles interact through one backend system, sharing data but with strict access control and role boundaries.
+
+1.2 Core Functional Responsibilities of the Backend
+
+The backend must:
+
+Authenticate users and enforce role-based access
+
+Manage stores and their inventories
+
+Accept and validate orders
+
+Coordinate payments (via Korah Pay)
+
+Assign riders and track deliveries in real time
+
+Serve location-aware data (nearby stores, rider positions)
+
+Push real-time updates via WebSockets
+
+Store and serve media files securely (Cloudflare R2)
+
+1.3 Architectural Philosophy (IMPORTANT FOR AI)
+
+This backend is designed as a modular monolith, meaning:
+
+One application
+
+One codebase
+
+One deployment
+
+Many strictly isolated modules
+
+Each module:
+
+Owns its own data
+
+Exposes functionality only through defined interfaces
+
+Does not “reach into” other modules
+
+This philosophy is intentional and must not be violated.
+
+2. ENDPOINT DESIGN PRINCIPLES (ENGINEERING DECISIONS)
+
+Before listing phases, we define how endpoint decisions are made, so neither you nor the AI has to guess later.
+
+2.1 “Single Endpoint vs Multiple Endpoints”
+
+There is no rule that says:
+
+“One endpoint must return everything”
+or
+
+“Everything must be split”
+
+Instead, endpoints are designed based on:
+
+A. Security
+
+Sensitive data is never bundled with non-sensitive data
+
+Users can only access data they own or are authorized to see
+
+B. Role Context
+
+A customer endpoint is not reused for store or rider logic
+
+Same resource may have different views per role
+
+C. Frontend Usage
+
+Endpoints align with actual app screens
+
+If two screens need different data shapes, endpoints are split
+
+D. Performance
+
+Avoid over-fetching
+
+Avoid N+1 patterns
+
+Result:
+Some endpoints return “aggregated views” (e.g., /users/me),
+others return focused slices (e.g., /orders/:id).
+
+This is an engineering choice, and this document will specify it case by case.
+
+3. TECHNOLOGY STACK (LOCKED)
+
+Runtime: Node.js (LTS)
+
+Language: TypeScript
+
+Framework: NestJS
+
+Package manager: npm
+
+Database: PostgreSQL
+
+ORM: Prisma
+
+Cache & queues: Redis
+
+Real-time: WebSockets (Socket.IO via NestJS)
+
+Payments: Korah Pay (abstracted)
+
+Storage: Cloudflare R2
+
+API style: REST
+
+❌ Docker is explicitly excluded.
+

@@ -1,0 +1,397 @@
+PHASE 3 — MARKETPLACE CORE (STORES, PRODUCTS, ORDERS)
+PHASE OBJECTIVE
+
+This phase introduces the commercial engine of the platform.
+
+After this phase:
+
+Stores can exist and be discovered
+
+Products can be managed by stores
+
+Customers can place orders
+
+Orders follow a strict lifecycle
+
+No riders or delivery logic yet
+
+No real-time sockets yet
+
+This separation is intentional.
+
+3.1 STORES MODULE
+Purpose
+
+Represent businesses that sell goods on the platform.
+
+A store is:
+
+Owned by exactly one user (role: STORE)
+
+Location-aware
+
+Order-receiving capable
+
+A store is not:
+
+A user
+
+A payment entity
+
+A delivery entity
+
+3.1.1 Store Data Model (Prisma-Level Guidance)
+
+A Store MUST include at least:
+
+id
+
+ownerUserId
+
+name
+
+description
+
+latitude
+
+longitude
+
+isOpen
+
+createdAt
+
+updatedAt
+
+Optional but allowed:
+
+openingHours (structured JSON)
+
+rating (derived later)
+
+3.1.2 Endpoints to Implement
+POST   /stores
+GET    /stores/nearby
+GET    /stores/:storeId
+PATCH  /stores/:storeId
+
+3.1.3 POST /stores
+Who Can Call
+
+Authenticated users with role = STORE
+
+Behavior
+
+Create a store profile for the user
+
+Associate store with ownerUserId
+
+Persist geolocation data
+
+Rules
+
+One store per user in MVP
+
+Store creation does NOT auto-open the store
+
+Store must exist before products can be added
+
+3.1.4 GET /stores/nearby
+Who Can Call
+
+Authenticated customers
+
+Unauthenticated access optional (engineering choice)
+
+Behavior
+
+Accept latitude & longitude
+
+Query stores within radius (e.g., 5–10km)
+
+Return summary view only
+
+Returned Data (Summary View)
+
+storeId
+
+name
+
+distance
+
+isOpen
+
+Engineering Decision:
+This endpoint intentionally does not return products to prevent over-fetching and protect performance.
+
+3.1.5 GET /stores/:storeId
+Behavior
+
+Return full store profile
+
+No sensitive owner data
+
+Used by:
+
+Store detail screen
+
+Order placement flow
+
+3.1.6 PATCH /stores/:storeId
+Who Can Call
+
+Store owner only
+
+Behavior
+
+Update allowed fields:
+
+name
+
+description
+
+isOpen
+
+openingHours
+
+3.2 PRODUCTS MODULE
+Purpose
+
+Manage inventory items belonging to stores.
+
+Products:
+
+Belong to exactly one store
+
+Are mutable until ordered
+
+Are snapshotted into orders
+
+3.2.1 Product Data Model (Guidance)
+
+A Product MUST include:
+
+id
+
+storeId
+
+name
+
+description
+
+price
+
+stockQuantity
+
+isAvailable
+
+createdAt
+
+updatedAt
+
+3.2.2 Endpoints to Implement
+POST   /products
+GET    /stores/:storeId/products
+GET    /products/:productId
+PATCH  /products/:productId
+DELETE /products/:productId
+
+3.2.3 POST /products
+Who Can Call
+
+Store owner
+
+Behavior
+
+Create product under store
+
+Validate ownership
+
+Set initial stock and price
+
+3.2.4 GET /stores/:storeId/products
+Behavior
+
+Return list of products for a store
+
+Filter by availability
+
+This endpoint exists because:
+
+It maps directly to the “Store Products” screen
+
+It avoids bundling product data into /stores/nearby
+
+3.2.5 PATCH /products/:productId
+Behavior
+
+Update mutable fields:
+
+name
+
+description
+
+price
+
+stockQuantity
+
+isAvailable
+
+Rule
+
+If product has been ordered before, price changes do not affect past orders
+
+3.2.6 DELETE /products/:productId
+Behavior
+
+Soft-delete or mark unavailable
+
+Hard delete optional but discouraged
+
+3.3 ORDERS MODULE (SYSTEM HEART)
+
+This is the most critical module so it is intentionally strict.
+
+Purpose
+
+Represent a commercial transaction between:
+
+Customer
+
+Store
+
+Platform (payment intermediary)
+
+Orders:
+
+Are immutable records
+
+Drive downstream processes (delivery, payment, notifications)
+
+3.3.1 Order Lifecycle (LOCKED)
+
+An order MUST follow this lifecycle:
+
+CREATED
+→ PAID
+→ STORE_ACCEPTED
+→ PREPARING
+→ READY
+→ COMPLETED
+→ CANCELLED
+
+
+No skipping.
+No arbitrary transitions.
+
+3.3.2 Order Data Model (Guidance)
+
+An Order MUST include:
+
+id
+
+customerUserId
+
+storeId
+
+status
+
+totalAmount
+
+paymentReference
+
+createdAt
+
+updatedAt
+
+And a child collection:
+
+OrderItems:
+
+productId (reference)
+
+productName (snapshot)
+
+unitPrice (snapshot)
+
+quantity
+
+3.3.3 Endpoints to Implement
+POST   /orders
+GET    /orders/:orderId
+GET    /orders/my
+PATCH  /orders/:orderId/status
+
+3.3.4 POST /orders
+Who Can Call
+
+Authenticated customers
+
+Behavior
+
+Validate store is open
+
+Validate products and stock
+
+Snapshot product data
+
+Create order with status = CREATED
+
+Reserve stock (logic-level, not payment yet)
+
+3.3.5 GET /orders/:orderId
+Behavior
+
+Return order details
+
+Data shape depends on role:
+
+Customer sees their order
+
+Store sees store-related fields
+
+Admin not implemented yet
+
+Engineering Decision:
+This endpoint returns a full order view, because it maps to the “Order Details” screen.
+
+3.3.6 GET /orders/my
+Behavior
+
+Return list of orders for authenticated user
+
+Filter by role:
+
+Customer → their orders
+
+Store → store’s orders
+
+This is an intentional aggregated endpoint, justified by frontend needs.
+
+3.3.7 PATCH /orders/:orderId/status
+Who Can Call
+
+Store (for acceptance & preparation)
+
+Platform (later for delivery)
+
+Behavior
+
+Enforce allowed state transitions only
+
+Emit domain events internally
+
+PHASE 3 COMPLETION CRITERIA
+
+Phase 3 is complete when:
+
+Stores can be created and discovered
+
+Products can be managed
+
+Orders can be placed and queried
+
+Order state machine is enforced
+
+No rider or delivery logic exists yet
+
+No WebSockets exist yet

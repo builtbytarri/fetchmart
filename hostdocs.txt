@@ -1,0 +1,142 @@
+# Fetchmart Backend - Local Development Setup Documentation
+# Created: January 8, 2026
+
+================================================================================
+                              DATABASE SETUP
+================================================================================
+
+## PostgreSQL 15
+
+### Installation
+- Installed via Homebrew: `brew install postgresql@15`
+
+### Service Management
+- Start:   `brew services start postgresql@15`
+- Stop:    `brew services stop postgresql@15`
+- Restart: `brew services restart postgresql@15`
+- Status:  `brew services list`
+
+### Database Details
+- Host:     localhost
+- Port:     5432
+- Database: market_db
+- Username: admin
+- Password: admin
+
+### Connection URL
+DATABASE_URL=postgresql://admin:admin@localhost:5432/market_db?schema=public
+
+### Useful Commands
+- Connect to database:  `/opt/homebrew/opt/postgresql@15/bin/psql -U admin -d market_db`
+- List databases:       `/opt/homebrew/opt/postgresql@15/bin/psql postgres -c "\l"`
+- List tables:          `/opt/homebrew/opt/postgresql@15/bin/psql -U admin -d market_db -c "\dt"`
+
+================================================================================
+                                REDIS SETUP
+================================================================================
+
+## Redis 8.4.0
+
+### Installation
+- Installed via Homebrew: `brew install redis`
+
+### Service Management
+- Start:   `brew services start redis`
+- Stop:    `brew services stop redis`
+- Restart: `brew services restart redis`
+- Status:  `brew services list`
+
+### Connection Details
+- Host: localhost
+- Port: 6379
+
+### Connection URL
+REDIS_URL=redis://localhost:6379
+
+### Useful Commands
+- Test connection: `redis-cli ping` (should return PONG)
+- Connect to CLI:  `redis-cli`
+- Get all keys:    `redis-cli KEYS "*"`
+- Flush all data:  `redis-cli FLUSHALL`
+
+================================================================================
+                              PRISMA COMMANDS
+================================================================================
+
+### Database Migrations
+- Create migration:     `npx prisma migrate dev --name <migration_name>`
+- Apply migrations:     `npx prisma migrate deploy`
+- Reset database:       `npx prisma migrate reset`
+- Generate client:      `npx prisma generate`
+
+### Database Inspection
+- Open Prisma Studio:   `npx prisma studio`
+- View schema:          `npx prisma db pull`
+
+================================================================================
+                           APPLICATION COMMANDS
+================================================================================
+
+### Development
+- Start dev server:     `npm run start:dev`
+- Build:                `npm run build`
+- Start production:     `npm run start:prod`
+
+### Health Check
+- URL: http://localhost:3000/health
+- Expected response when all services are up:
+  {
+    "status": "healthy",
+    "services": {
+      "app": { "status": "up" },
+      "database": { "status": "up" },
+      "redis": { "status": "up" }
+    }
+  }
+
+================================================================================
+                           ENVIRONMENT VARIABLES
+================================================================================
+
+### Required for Development (in .env file)
+
+# Application
+APP_PORT=3000
+
+# Database (PostgreSQL)
+DATABASE_URL=postgresql://admin:admin@localhost:5432/market_db?schema=public
+
+# Redis
+REDIS_URL=redis://localhost:6379
+
+# JWT Secrets (development values - change in production)
+JWT_ACCESS_SECRET=dev-access-secret-change-in-production
+JWT_REFRESH_SECRET=dev-refresh-secret-change-in-production
+
+### Not Required Until Later Phases
+- KORAH_* variables (Payment - Phase 4+)
+- MAP_* variables (Location - Phase 3+)
+- R2_* variables (File Storage - Later phases)
+
+================================================================================
+                              TROUBLESHOOTING
+================================================================================
+
+### PostgreSQL won't start
+1. Check if port 5432 is in use: `lsof -i :5432`
+2. Check logs: `tail -f /opt/homebrew/var/log/postgresql@15.log`
+3. Try restarting: `brew services restart postgresql@15`
+
+### Redis won't start
+1. Check if port 6379 is in use: `lsof -i :6379`
+2. Check logs: `tail -f /opt/homebrew/var/log/redis.log`
+3. Try restarting: `brew services restart redis`
+
+### Port 3000 already in use
+- Kill process: `lsof -ti:3000 | xargs kill -9`
+
+### Prisma migration issues
+- Reset database: `npx prisma migrate reset`
+- Regenerate client: `npx prisma generate`
+
+================================================================================
