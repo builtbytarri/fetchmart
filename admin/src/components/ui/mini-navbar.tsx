@@ -53,10 +53,10 @@ export function Navbar() {
   const logoElement = (
     <Link href="/home" className="flex items-center">
       <Image
-        src="/images/icon.png"
+        src="/images/logo.png"
         alt="FetchMart"
-        width={28}
-        height={28}
+        width={50}
+        height={50}
         className="h-7 w-auto"
       />
     </Link>

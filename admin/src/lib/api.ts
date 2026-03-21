@@ -102,4 +102,29 @@ export const adminApi = {
     const response = await api.get(`/admin/analytics/orders?days=${days}`);
     return response.data;
   },
+
+  getActiveOrders: async () => {
+    const response = await api.get('/admin/orders/active');
+    return response.data;
+  },
+
+  getAvailableRiders: async () => {
+    const response = await api.get('/admin/riders/available');
+    return response.data;
+  },
+
+  assignRiderToOrder: async (orderId: string, riderId: string) => {
+    const response = await api.post(`/admin/orders/${orderId}/assign-rider`, { riderId });
+    return response.data;
+  },
+
+  updateOrderStatus: async (orderId: string, status: string) => {
+    const response = await api.patch(`/admin/orders/${orderId}/status`, { status });
+    return response.data;
+  },
+
+  cancelOrder: async (orderId: string) => {
+    const response = await api.post(`/admin/orders/${orderId}/cancel`);
+    return response.data;
+  },
 };

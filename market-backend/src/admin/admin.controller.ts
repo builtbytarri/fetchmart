@@ -1,8 +1,11 @@
 import {
   Controller,
   Get,
+  Post,
+  Patch,
   Param,
   Query,
+  Body,
   UseGuards,
 } from '@nestjs/common';
 import { AdminService } from './admin.service';
@@ -98,5 +101,36 @@ export class AdminController {
   @Get('analytics/orders')
   async getOrdersOverTime(@Query('days') days?: string) {
     return this.adminService.getOrdersOverTime(days ? parseInt(days) : 7);
+  }
+
+  @Get('orders/active')
+  async getActiveOrders() {
+    return this.adminService.getActiveOrders();
+  }
+
+  @Get('riders/available')
+  async getAvailableRiders() {
+    return this.adminService.getAvailableRiders();
+  }
+
+  @Post('orders/:orderId/assign-rider')
+  async assignRiderToOrder(
+    @Param('orderId') orderId: string,
+    @Body('riderId') riderId: string,
+  ) {
+    return this.adminService.assignRiderToOrder(orderId, riderId);
+  }
+
+  @Patch('orders/:orderId/status')
+  async updateOrderStatus(
+    @Param('orderId') orderId: string,
+    @Body('status') status: OrderStatus,
+  ) {
+    return this.adminService.updateOrderStatus(orderId, status);
+  }
+
+  @Post('orders/:orderId/cancel')
+  async cancelOrder(@Param('orderId') orderId: string) {
+    return this.adminService.cancelOrder(orderId);
   }
 }

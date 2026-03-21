@@ -14,12 +14,14 @@ import {
   Settings,
   HelpCircle,
   LogOut,
+  Activity,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
 
 const navigation = [
   { name: 'Overview', href: '/', icon: LayoutDashboard },
+  { name: 'Activity', href: '/activity', icon: Activity },
   { name: 'Orders', href: '/orders', icon: ShoppingCart },
   { name: 'Stores', href: '/stores', icon: Store },
   { name: 'Riders', href: '/riders', icon: Bike },
@@ -40,15 +42,15 @@ export function Sidebar() {
   return (
     <div className="flex h-full w-64 flex-col bg-white border-r border-[#DEE2E6]">
       {/* Logo */}
-      <div className="flex h-16 items-center px-4 border-b border-[#DEE2E6]">
-        <Link href="/" className="flex items-center gap-2">
+      <div className="flex h-20 items-center justify-center px-4 border-b border-[#DEE2E6]">
+        <Link href="/" className="flex items-center justify-center">
           <Image
             src="/images/logo.png"
             alt="FetchMart"
-            width={40}
-            height={40}
+            width={120}
+            height={48}
+            className="h-12 w-auto"
           />
-          <span className="font-semibold text-lg text-[#212529]">FetchMart</span>
         </Link>
       </div>
 

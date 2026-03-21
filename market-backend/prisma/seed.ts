@@ -12,6 +12,21 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   console.log('🌱 Seeding database...');
 
+  // Create admin user
+  const admin = await prisma.user.upsert({
+    where: { email: 'admin@fetchmart.com' },
+    update: {},
+    create: {
+      email: 'admin@fetchmart.com',
+      passwordHash: await bcrypt.hash('admin123', 10),
+      name: 'Admin',
+      phone: '+2348000000000',
+      role: UserRole.ADMIN,
+    },
+  });
+
+  console.log('✅ Created admin user:', admin.email);
+
   // Create store owner users
   const storeOwners = await Promise.all([
     prisma.user.upsert({

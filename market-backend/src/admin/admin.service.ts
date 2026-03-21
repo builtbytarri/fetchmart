@@ -291,4 +291,92 @@ export class AdminService {
       .map(([date, stats]) => ({ date, ...stats }))
       .reverse();
   }
+
+  async getActiveOrders() {
+    return this.prisma.order.findMany({
+      where: {
+        status: {
+          notIn: [OrderStatus.COMPLETED, OrderStatus.CANCELLED],
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        customer: { select: { id: true, name: true, email: true, phone: true } },
+        store: { select: { id: true, name: true } },
+        rider: {
+          select: {
+            id: true,
+            user: { select: { name: true, phone: true } },
+          },
+        },
+        orderItems: true,
+      },
+    });
+  }
+
+  async getAvailableRiders() {
+    return this.prisma.rider.findMany({
+      where: { isAvailable: true },
+      include: {
+        user: { select: { id: true, name: true, phone: true } },
+      },
+    });
+  }
+
+  async assignRiderToOrder(orderId: string, riderId: string) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) {
+      throw new Error('Order not found');
+    }
+
+    const rider = await this.prisma.rider.findUnique({ where: { id: riderId } });
+    if (!rider) {
+      throw new Error('Rider not found');
+    }
+
+    return this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        riderId,
+        status: OrderStatus.ASSIGNED,
+        assignedAt: new Date(),
+      },
+      include: {
+        customer: { select: { id: true, name: true, email: true, phone: true } },
+        store: { select: { id: true, name: true } },
+        rider: {
+          select: {
+            id: true,
+            user: { select: { name: true, phone: true } },
+          },
+        },
+      },
+    });
+  }
+
+  async updateOrderStatus(orderId: string, status: OrderStatus) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) {
+      throw new Error('Order not found');
+    }
+
+    return this.prisma.order.update({
+      where: { id: orderId },
+      data: { status },
+      include: {
+        customer: { select: { id: true, name: true, email: true, phone: true } },
+        store: { select: { id: true, name: true } },
+        rider: {
+          select: {
+            id: true,
+            user: { select: { name: true, phone: true } },
+          },
+        },
+      },
+    });
+  }
+
+  async cancelOrder(orderId: string) {
+    return this.updateOrderStatus(orderId, OrderStatus.CANCELLED);
+  }
 }

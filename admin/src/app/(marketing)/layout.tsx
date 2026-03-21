@@ -41,16 +41,20 @@ export default function MarketingLayout({
               
               {/* Address */}
               <address className="not-italic text-gray-400 text-sm leading-relaxed mb-6">
-                123 Market Street<br />
-                Lagos, Nigeria<br />
-                West Africa
+                188A A1 Crescent<br />
+                Federal Housing Authority, Lugbe<br />
+                Abuja, FCT, Nigeria
               </address>
               
               {/* Contact Details */}
               <div className="space-y-2 text-sm">
                 <div className="flex items-center gap-4">
-                  <span className="text-gray-500">Phone number</span>
-                  <span className="text-gray-300">+234 800 FETCH</span>
+                  <span className="text-gray-500">Phone</span>
+                  <span className="text-gray-300">0706 106 7906</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="text-gray-500">Alt Phone</span>
+                  <span className="text-gray-300">0701 255 8994</span>
                 </div>
                 <div className="flex items-center gap-4">
                   <span className="text-gray-500">Email</span>

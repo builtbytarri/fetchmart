@@ -14,69 +14,69 @@ const features = [
   {
     icon: Clock,
     title: 'Your Time, Protected',
-    description: 'No more battling Lagos traffic or spending hours in market queues. Reclaim your weekends and evenings for what truly matters.',
+    description: 'No more battling Abuja traffic or spending hours in market queues. Reclaim your weekends and evenings for what truly matters.',
   },
   {
     icon: ShoppingBag,
     title: 'The Full Market Experience',
-    description: 'Fresh produce, quality meats, household essentials, and market favorites — all from trusted supermarkets and local vendors.',
+    description: 'Fresh groceries, spices, grains, meats, household items, electronics — all from Abuja\'s trusted local market vendors.',
   },
   {
     icon: Truck,
-    title: 'To Your Door, Fast',
-    description: 'From the market to your doorstep in as little as 30 minutes. Track your order in real-time and plan your day with confidence.',
+    title: 'Flexible Delivery Options',
+    description: 'Same-day, express 1-hour, or scheduled delivery. Track your order in real-time and plan your day with confidence.',
   },
   {
     icon: Shield,
-    title: 'Freshness Guaranteed',
-    description: "Every item is handpicked for quality. Not satisfied? We'll make it right — that's our promise to you.",
+    title: 'Fresh, Local & Healthy',
+    description: "Every item handpicked from Abuja's vibrant markets. We champion healthy, nutritious, locally-sourced food for better living.",
   },
 ];
 
 const howItWorks = [
   {
     step: '01',
-    title: 'Browse Your Favorite Stores',
-    description: 'Explore supermarkets and markets near you. Find fresh produce, snacks, beverages, and everything your home needs.',
+    title: 'Browse Local Markets',
+    description: 'Explore Abuja\'s vibrant local markets from your phone. Fresh produce, spices, grains, and everything your home needs.',
   },
   {
     step: '02',
     title: 'Fill Your Cart',
-    description: 'Add items with a tap. No haggling, no stress. Transparent prices from vendors you can trust.',
+    description: 'Add items with a tap. Transparent vendor pricing with no hidden fees. Support local businesses with every order.',
   },
   {
     step: '03',
-    title: 'We Handle the Rest',
-    description: 'Our trained riders pick your items with care and deliver them fresh to your doorstep — rain or shine.',
+    title: 'We Deliver Fresh',
+    description: 'Our trained riders pick your items with care and deliver them fresh to your doorstep across Greater Abuja.',
   },
 ];
 
 const testimonials = [
   {
     name: 'Adaeze Okonkwo',
-    role: 'Marketing Manager, Victoria Island',
+    role: 'Marketing Manager, Wuse',
     content: 'I used to dread Saturday market runs. Now I order on Friday evening and wake up to fresh groceries at my door. FetchMart gave me my weekends back.',
     rating: 5,
   },
   {
     name: 'Emmanuel Adeyemi',
-    role: 'Father of Three, Lekki',
+    role: 'Father of Three, Maitama',
     content: 'With three kids and a demanding job, finding time to shop was impossible. FetchMart feels like having a personal shopper who actually cares about quality.',
     rating: 5,
   },
   {
     name: 'Chioma Nwosu',
-    role: 'Restaurant Owner, Ikeja',
+    role: 'Restaurant Owner, Garki',
     content: 'I run a small restaurant and reliability is everything. FetchMart delivers exactly what I need, when I need it. My customers taste the difference.',
     rating: 5,
   },
 ];
 
 const stats = [
-  { value: '50K+', label: 'Happy Homes' },
-  { value: '100+', label: 'Partner Stores' },
-  { value: '30min', label: 'Avg. Delivery' },
-  { value: '4.9', label: 'App Rating' },
+  { value: '100+', label: 'Daily Orders Goal' },
+  { value: '50+', label: 'Local Vendors' },
+  { value: '1hr', label: 'Express Delivery' },
+  { value: 'FCT', label: 'Coverage Area' },
 ];
 
 export default function HomePage() {
@@ -223,13 +223,13 @@ export default function HomePage() {
         <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 w-full text-center">
           <div ref={heroContentRef} className="max-w-3xl mx-auto">
             <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-medium text-white leading-[1.15] mb-6 opacity-0">
-              Fresh from the market.
+              Fresh from Abuja Markets.
               <br />
-              <span className="text-[#4CAF50]">Right at your door.</span>
+              <span className="text-[#4CAF50]">To Your Door.</span>
             </h1>
             
             <p className="text-base sm:text-lg text-white/80 mb-8 leading-relaxed max-w-2xl mx-auto opacity-0">
-              Skip the queues, the traffic, and the stress. FetchMart brings market-fresh groceries and household essentials to you — fast, easy, and affordable.
+              Fast, Reliable, Healthy. FetchMart bridges Abuja&apos;s vibrant local markets with modern convenience — delivering fresh groceries, spices, grains, and more to your doorstep.
             </p>
             
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 opacity-0">
@@ -436,7 +436,7 @@ export default function HomePage() {
                   grocery delivery
                 </h3>
                 <p className="text-gray-400 text-lg mb-8">
-                  30+ minute delivery across Lagos.
+                  Express 1-hour delivery across Greater Abuja.
                 </p>
                 <button
                   onClick={() => setIsModalOpen(true)}

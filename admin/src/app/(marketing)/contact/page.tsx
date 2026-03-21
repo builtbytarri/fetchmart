@@ -13,12 +13,12 @@ const contactInfo = [
   {
     icon: MapPin,
     title: 'Visit Us',
-    details: ['Lagos, Nigeria'],
+    details: ['188A A1 Crescent, FHA Lugbe', 'Abuja, FCT, Nigeria'],
   },
   {
     icon: Phone,
     title: 'Call Us',
-    details: ['+234 800 FETCH'],
+    details: ['0706 106 7906', '0701 255 8994'],
   },
   {
     icon: Mail,
@@ -28,7 +28,7 @@ const contactInfo = [
   {
     icon: Clock,
     title: 'Working Hours',
-    details: ['Mon - Sun: 8AM - 8PM'],
+    details: ['Mon - Sun: 7AM - 9PM'],
   },
 ];
 
@@ -269,13 +269,13 @@ export default function ContactPage() {
               <div className="bg-gray-950 rounded-3xl p-8">
                 <h3 className="text-xl font-bold text-white mb-6">Quick Contact</h3>
                 <div className="space-y-4">
-                  <a href="tel:+2348001234567" className="flex items-center gap-4 bg-white/5 hover:bg-white/10 rounded-xl p-4 transition-colors">
+                  <a href="tel:+2347061067906" className="flex items-center gap-4 bg-white/5 hover:bg-white/10 rounded-xl p-4 transition-colors">
                     <div className="w-12 h-12 bg-[#4CAF50]/20 rounded-full flex items-center justify-center flex-shrink-0">
                       <Phone className="w-5 h-5 text-[#4CAF50]" />
                     </div>
                     <div>
                       <p className="font-medium text-white">Call Support</p>
-                      <p className="text-gray-400 text-sm">+234 800 FETCH</p>
+                      <p className="text-gray-400 text-sm">0706 106 7906 / 0701 255 8994</p>
                     </div>
                   </a>
                   <a href="mailto:support@fetchmart.com.ng" className="flex items-center gap-4 bg-white/5 hover:bg-white/10 rounded-xl p-4 transition-colors">
