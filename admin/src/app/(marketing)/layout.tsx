@@ -125,8 +125,15 @@ export default function MarketingLayout({
 
           {/* Copyright */}
           <div className="mt-16 pt-8 border-t border-gray-800 text-center">
-            <Link href="/login" className="text-gray-500 text-sm hover:text-gray-400 transition-colors">
-              © {new Date().getFullYear()} FetchMart. All rights reserved.
+            <Link href="/login" className="inline-flex items-center justify-center gap-2 text-gray-500 text-sm hover:text-gray-400 transition-colors">
+              <Image
+                src="/images/icon.png"
+                alt="FetchMart"
+                width={20}
+                height={20}
+                className="h-5 w-auto"
+              />
+              <span>© {new Date().getFullYear()} FetchMart. All rights reserved.</span>
             </Link>
           </div>
         </div>
