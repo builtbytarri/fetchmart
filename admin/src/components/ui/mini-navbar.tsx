@@ -55,9 +55,10 @@ export function Navbar() {
       <Image
         src="/images/logo.png"
         alt="FetchMart"
-        width={50}
-        height={50}
-        className="h-7 w-auto"
+        width={140}
+        height={40}
+        className="h-8 w-auto"
+        priority
       />
     </Link>
   );
@@ -95,8 +96,8 @@ export function Navbar() {
                          w-[calc(100%-2rem)] sm:w-auto
                          transition-[border-radius] duration-0 ease-in-out`}>
 
-        <div className="flex items-center justify-between w-full gap-x-6 sm:gap-x-8">
-          <div className="flex items-center">
+        <div className="flex items-center justify-between w-full gap-x-6 sm:gap-x-10">
+          <div className="flex items-center mr-4 sm:mr-8">
              {logoElement}
           </div>
 

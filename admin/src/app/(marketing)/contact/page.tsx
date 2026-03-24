@@ -95,7 +95,7 @@ export default function ContactPage() {
       {/* Hero Section */}
       <section className="relative min-h-[60vh] flex items-center overflow-hidden">
         <Image
-          src="/pic/bg6.jpg"
+          src="/pic/bg3.jpg"
           alt="Contact FetchMart"
           fill
           className="object-cover"

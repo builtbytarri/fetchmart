@@ -397,11 +397,10 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Team Section */}
+      {/* Team Section - Commented out for now
       <section ref={teamRef} className="py-20 lg:py-28 bg-[#FAFAF9]">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="grid lg:grid-cols-12 gap-12 items-center">
-            {/* Left Content */}
             <div className="lg:col-span-4">
               <h2 className="font-serif text-3xl md:text-4xl font-bold text-gray-900 leading-tight mb-4">
                 Our Best Working Team
@@ -416,8 +415,6 @@ export default function AboutPage() {
                 Join Our Team
               </Link>
             </div>
-
-            {/* Team Cards */}
             <div className="lg:col-span-8">
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {team.map((member, index) => (
@@ -454,6 +451,7 @@ export default function AboutPage() {
           </div>
         </div>
       </section>
+      */}
 
       {/* Differentiators */}
       <section className="py-20 lg:py-28 bg-white">

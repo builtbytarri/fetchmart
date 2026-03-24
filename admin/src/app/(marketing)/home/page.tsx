@@ -223,7 +223,7 @@ export default function HomePage() {
         <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 w-full text-center">
           <div ref={heroContentRef} className="max-w-3xl mx-auto">
             <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-medium text-white leading-[1.15] mb-6 opacity-0">
-              Fresh from Abuja Markets.
+              Fresh from Local Markets.
               <br />
               <span className="text-[#4CAF50]">To Your Door.</span>
             </h1>
@@ -457,7 +457,7 @@ export default function HomePage() {
                   <div className="absolute inset-4 rounded-full overflow-hidden">
                     {/* Background Image */}
                     <Image
-                      src="/pic/bg7.jpg"
+                      src="/pic/scooter.jpg"
                       alt="Delivery"
                       fill
                       className="object-cover"
