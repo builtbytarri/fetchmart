@@ -51,15 +51,16 @@ export function Navbar() {
   }, [isOpen]);
 
   const logoElement = (
-    <Link href="/home" className="flex items-center">
+    <Link href="/home" className="flex items-center gap-2">
       <Image
-        src="/images/logo.png"
+        src="/images/icon.png"
         alt="FetchMart"
-        width={140}
-        height={40}
-        className="h-8 w-auto"
+        width={28}
+        height={28}
+        className="h-7 w-auto"
         priority
       />
+      <span className="text-[#4CAF50] font-semibold text-lg">FetchMart</span>
     </Link>
   );
 

@@ -130,7 +130,7 @@ export default function ContactPage() {
                 <h3 className="font-semibold text-gray-900 text-sm lg:text-base">{item.title}</h3>
                 <div className="mt-2">
                   {item.details.map((detail, i) => (
-                    <p key={i} className="text-gray-500 text-sm">{detail}</p>
+                    <p key={i} className="text-gray-500 text-sm break-all">{detail}</p>
                   ))}
                 </div>
               </div>
