@@ -42,5 +42,14 @@ export const SPACING = {
   xl: 32,
 };
 
-// Google Maps API Key - Replace with your actual key
-export const GOOGLE_MAPS_API_KEY = 'YOUR_GOOGLE_MAPS_API_KEY';
+// Mapbox public token — loaded from EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN in .env
+export const MAPBOX_ACCESS_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN ?? '';
+
+// Google Sign-In OAuth client IDs from Google Cloud Console.
+// Create three "OAuth 2.0 Client ID" entries:
+//   iOS     → bundle ID `com.anonymous.FetchMart`
+//   Android → package name + SHA-1 fingerprint of the signing key
+//   Web     → required by the Android SDK to mint idTokens, even on mobile
+export const GOOGLE_OAUTH_IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? '';
+export const GOOGLE_OAUTH_ANDROID_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? '';
+export const GOOGLE_OAUTH_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '';

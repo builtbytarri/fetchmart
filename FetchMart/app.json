@@ -3,6 +3,7 @@
     "name": "FetchMart",
     "slug": "FetchMart",
     "version": "1.0.0",
+    "scheme": "fetchmart",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -14,7 +15,16 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.FetchMart"
+      "bundleIdentifier": "com.fetchmart.app",
+      "buildNumber": "3",
+      "usesAppleSignIn": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "FetchMart uses your location to find nearby stores and deliver to your address.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "FetchMart uses your location in the background so riders can update their position during deliveries.",
+        "NSLocationAlwaysUsageDescription": "FetchMart uses your location in the background so riders can update their position during deliveries.",
+        "NSPhotoLibraryUsageDescription": "FetchMart needs access to your photos so you can add pictures of your store and the products you sell.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -22,10 +32,28 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.fetchmart.app",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "@rnmapbox/maps",
+      "expo-apple-authentication",
+      "expo-web-browser"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "861d393d-470e-4dc2-99ae-6e027dc36c26"
+      }
     }
   }
 }

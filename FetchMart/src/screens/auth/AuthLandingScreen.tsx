@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,11 +6,16 @@ import {
   Dimensions,
   Image,
   TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { COLORS, SPACING } from '../../constants/config';
+import { useAuthStore } from '../../store';
+import { appleAuth } from '../../api';
 
 const { width, height } = Dimensions.get('window');
 
@@ -19,12 +24,35 @@ type Props = {
 };
 
 export const AuthLandingScreen: React.FC<Props> = ({ navigation }) => {
+  const { signInWithGoogle, signInWithApple, isLoading } = useAuthStore();
+  const [appleAvailable, setAppleAvailable] = useState(false);
+
+  useEffect(() => {
+    appleAuth.isAvailable().then(setAppleAvailable);
+  }, []);
+
   const handleGetStarted = () => {
     navigation.navigate('Register');
   };
 
   const handleSignIn = () => {
     navigation.navigate('Login');
+  };
+
+  const handleGoogle = async () => {
+    try {
+      await signInWithGoogle();
+    } catch (e: any) {
+      Alert.alert('Sign in failed', e.response?.data?.message || e.message || 'Could not sign in with Google');
+    }
+  };
+
+  const handleApple = async () => {
+    try {
+      await signInWithApple();
+    } catch (e: any) {
+      Alert.alert('Sign in failed', e.response?.data?.message || e.message || 'Could not sign in with Apple');
+    }
   };
 
   return (
@@ -64,17 +92,33 @@ export const AuthLandingScreen: React.FC<Props> = ({ navigation }) => {
         </View>
 
         <View style={styles.socialContainer}>
-          <TouchableOpacity style={styles.socialButton}>
-            <Ionicons name="logo-apple" size={20} color={COLORS.text} />
-            <Text style={styles.socialButtonText}>Apple</Text>
-          </TouchableOpacity>
+          {/* Apple button — iOS only, per Apple's Human Interface Guidelines */}
+          {appleAvailable && Platform.OS === 'ios' && (
+            <TouchableOpacity
+              style={[styles.socialButton, isLoading && styles.socialButtonDisabled]}
+              onPress={handleApple}
+              disabled={isLoading}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="logo-apple" size={20} color={COLORS.text} />
+              <Text style={styles.socialButtonText}>Apple</Text>
+            </TouchableOpacity>
+          )}
 
-          <TouchableOpacity style={styles.socialButton}>
-            <Image
-              source={{ uri: 'https://www.google.com/favicon.ico' }}
-              style={styles.googleIcon}
-            />
-            <Text style={styles.socialButtonText}>Google</Text>
+          <TouchableOpacity
+            style={[styles.socialButton, isLoading && styles.socialButtonDisabled]}
+            onPress={handleGoogle}
+            disabled={isLoading}
+            activeOpacity={0.8}
+          >
+            {isLoading ? (
+              <ActivityIndicator size="small" color={COLORS.text} />
+            ) : (
+              <>
+                <Ionicons name="logo-google" size={20} color="#DB4437" />
+                <Text style={styles.socialButtonText}>Google</Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -173,6 +217,9 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
     borderRadius: 12,
     marginHorizontal: SPACING.xs,
+  },
+  socialButtonDisabled: {
+    opacity: 0.6,
   },
   socialButtonText: {
     color: COLORS.text,

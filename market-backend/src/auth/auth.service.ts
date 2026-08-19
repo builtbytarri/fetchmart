@@ -10,8 +10,9 @@ import * as crypto from 'crypto';
 import { PrismaService } from '../database';
 import { AppConfigService } from '../config';
 import { EmailService } from '../email';
-import { RegisterDto, LoginDto, RefreshTokenDto, ForgotPasswordDto, ResetPasswordDto, SendOtpDto, VerifyOtpDto } from './dto';
-import { UserRole, UserStatus } from '@prisma/client';
+import { RegisterDto, LoginDto, RefreshTokenDto, ForgotPasswordDto, ResetPasswordDto, SendOtpDto, VerifyOtpDto, GoogleSignInDto, AppleSignInDto } from './dto';
+import { AuthProvider, UserRole, UserStatus } from '@prisma/client';
+import { OAuthService, VerifiedIdentity } from './oauth.service';
 
 interface TokenPayload {
   userId: string;
@@ -33,6 +34,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly appConfig: AppConfigService,
     private readonly emailService: EmailService,
+    private readonly oauthService: OAuthService,
   ) {}
 
   async register(dto: RegisterDto): Promise<AuthTokens> {
@@ -72,6 +74,112 @@ export class AuthService {
     return this.generateTokens(user.id, user.role);
   }
 
+  async signInWithGoogle(dto: GoogleSignInDto) {
+    const identity = await this.oauthService.verifyGoogleIdToken(dto.idToken);
+    return this.signInWithProvider(AuthProvider.GOOGLE, identity, identity.name, dto.role);
+  }
+
+  async signInWithApple(dto: AppleSignInDto) {
+    const identity = await this.oauthService.verifyAppleIdentityToken(dto.identityToken);
+    // Apple only returns the user's name on the FIRST sign-in. The mobile client passes it through;
+    // we use it only when creating a new user record.
+    const fallbackName = [dto.firstName, dto.lastName].filter(Boolean).join(' ').trim() || undefined;
+    return this.signInWithProvider(AuthProvider.APPLE, identity, fallbackName, dto.role);
+  }
+
+  /**
+   * Find-or-create the User for a verified provider identity.
+   *
+   * SECURITY: this method assumes `identity` has already been verified against
+   * the provider's signed token. Never call it with raw client input.
+   */
+  private async signInWithProvider(
+    provider: AuthProvider,
+    identity: VerifiedIdentity,
+    fallbackName: string | undefined,
+    requestedRole: UserRole | undefined,
+  ): Promise<AuthTokens & { user: { id: string; email: string; name: string; role: string } }> {
+    // 1. Direct match on (provider, providerUid) — happy path for repeat sign-ins
+    const linked = await this.prisma.oAuthAccount.findUnique({
+      where: { provider_providerUid: { provider, providerUid: identity.providerUid } },
+      include: { user: true },
+    });
+
+    if (linked) {
+      if (linked.user.status === UserStatus.SUSPENDED) {
+        throw new UnauthorizedException('Account suspended');
+      }
+      return this.completeAuth(linked.user);
+    }
+
+    // 2. Account-linking: provider hasn't been seen before, but the email might already be on file.
+    // We only auto-link when the provider attests `email_verified`; otherwise an attacker could
+    // create a Google/Apple account with someone else's email and take over their account.
+    const existingByEmail = await this.prisma.user.findUnique({
+      where: { email: identity.email },
+    });
+
+    if (existingByEmail) {
+      if (!identity.emailVerified) {
+        throw new BadRequestException(
+          'An account with this email exists. Please sign in with your existing method first to link this provider.',
+        );
+      }
+      if (existingByEmail.status === UserStatus.SUSPENDED) {
+        throw new UnauthorizedException('Account suspended');
+      }
+      await this.prisma.oAuthAccount.create({
+        data: {
+          userId: existingByEmail.id,
+          provider,
+          providerUid: identity.providerUid,
+          email: identity.email,
+        },
+      });
+      return this.completeAuth(existingByEmail);
+    }
+
+    // 3. Brand-new account. Default to CUSTOMER for OAuth sign-ups; STORE/RIDER onboarding has
+    // extra requirements that are better collected via the regular email flow.
+    const role = requestedRole ?? UserRole.CUSTOMER;
+    const name =
+      identity.name?.trim() ||
+      fallbackName?.trim() ||
+      identity.email.split('@')[0];
+
+    const newUser = await this.prisma.user.create({
+      data: {
+        email: identity.email,
+        // passwordHash deliberately left null — this is an OAuth-only account.
+        name,
+        role,
+        oauthAccounts: {
+          create: {
+            provider,
+            providerUid: identity.providerUid,
+            email: identity.email,
+          },
+        },
+      },
+    });
+
+    if (role === UserRole.RIDER) {
+      await this.prisma.rider.create({
+        data: { userId: newUser.id, isAvailable: true },
+      });
+    }
+
+    return this.completeAuth(newUser);
+  }
+
+  private async completeAuth(user: { id: string; email: string; name: string; role: UserRole }) {
+    const tokens = await this.generateTokens(user.id, user.role);
+    return {
+      ...tokens,
+      user: { id: user.id, email: user.email, name: user.name, role: user.role },
+    };
+  }
+
   async login(dto: LoginDto): Promise<AuthTokens & { user: { id: string; email: string; name: string; role: string } }> {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email.toLowerCase() },
@@ -83,6 +191,14 @@ export class AuthService {
 
     if (user.status === UserStatus.SUSPENDED) {
       throw new UnauthorizedException('Account suspended');
+    }
+
+    // OAuth-only accounts have no passwordHash. Reject with a generic-but-helpful message
+    // that doesn't reveal which providers the user has linked (avoids enumeration).
+    if (!user.passwordHash) {
+      throw new UnauthorizedException(
+        'This account was created with social sign-in. Please continue with Google or Apple.',
+      );
     }
 
     const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);

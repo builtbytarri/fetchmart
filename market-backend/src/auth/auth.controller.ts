@@ -8,6 +8,8 @@ import {
   ResetPasswordDto,
   SendOtpDto,
   VerifyOtpDto,
+  GoogleSignInDto,
+  AppleSignInDto,
 } from './dto';
 
 @Controller('auth')
@@ -62,5 +64,17 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async verifyOtp(@Body() dto: VerifyOtpDto) {
     return this.authService.verifyOtp(dto);
+  }
+
+  @Post('google')
+  @HttpCode(HttpStatus.OK)
+  async googleSignIn(@Body() dto: GoogleSignInDto) {
+    return this.authService.signInWithGoogle(dto);
+  }
+
+  @Post('apple')
+  @HttpCode(HttpStatus.OK)
+  async appleSignIn(@Body() dto: AppleSignInDto) {
+    return this.authService.signInWithApple(dto);
   }
 }

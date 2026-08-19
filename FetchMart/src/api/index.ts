@@ -7,3 +7,5 @@ export * from './riders';
 export * from './delivery';
 export * from './payments';
 export * from './users';
+export * from './socketClient';
+export * from './oauth';

@@ -26,6 +26,22 @@ export interface ResetPasswordRequest {
   newPassword: string;
 }
 
+export interface GoogleSignInRequest {
+  idToken: string;
+  role?: UserRole;
+}
+
+export interface AppleSignInRequest {
+  identityToken: string;
+  firstName?: string;
+  lastName?: string;
+  role?: UserRole;
+}
+
+interface AuthResponse extends AuthTokens {
+  user?: { id: string; email: string; name: string; role: UserRole };
+}
+
 export const authApi = {
   register: async (data: RegisterRequest): Promise<AuthTokens> => {
     const response = await api.post<AuthTokens>('/auth/register', data);
@@ -76,6 +92,18 @@ export const authApi = {
 
   verifyOtp: async (phone: string, code: string): Promise<{ verified: boolean }> => {
     const response = await api.post<{ verified: boolean }>('/auth/verify-otp', { phone, code });
+    return response.data;
+  },
+
+  googleSignIn: async (data: GoogleSignInRequest): Promise<AuthResponse> => {
+    const response = await api.post<AuthResponse>('/auth/google', data);
+    await apiClient.setTokens({ accessToken: response.data.accessToken, refreshToken: response.data.refreshToken });
+    return response.data;
+  },
+
+  appleSignIn: async (data: AppleSignInRequest): Promise<AuthResponse> => {
+    const response = await api.post<AuthResponse>('/auth/apple', data);
+    await apiClient.setTokens({ accessToken: response.data.accessToken, refreshToken: response.data.refreshToken });
     return response.data;
   },
 };

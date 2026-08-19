@@ -1,0 +1,62 @@
+# Production stack — designed to sit ALONGSIDE an existing Caddy on the same box.
+#
+# Postgres is on Neon, so only the API and Redis run here.
+#
+# Redis is not optional: BullMQ drives the store-accept timeout and the
+# rider-offer expiry. Without it a paid order sits forever with no auto-cancel
+# and no refund.
+#
+# Note there is no `ports:` on the api service. Caddy already owns 80/443 and
+# reaches this container by name over the shared `web` network. Publishing 3000
+# on the host would let anyone bypass TLS by hitting the IP directly.
+
+services:
+  api:
+    build: .
+    image: fetchmart-api:latest
+    container_name: fetchmart-api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Redis lives on the internal network under its service name. This
+      # overrides whatever localhost value .env carries for local development.
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - internal
+      - web
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 40s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    container_name: fetchmart-redis
+    restart: unless-stopped
+    # Append-only persistence so queued jobs survive a restart or redeploy.
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    networks:
+      # Deliberately not on `web` — nothing outside this stack should reach Redis.
+      - internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+networks:
+  internal:
+  web:
+    # Created once by hand and shared with the Caddy container.
+    external: true
+    name: web
+
+volumes:
+  redis-data:

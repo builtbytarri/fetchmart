@@ -16,6 +16,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../store';
 import { COLORS, SPACING } from '../../constants/config';
+import { SocialAuthButtons } from '../../components';
 
 type Props = {
   navigation: NativeStackNavigationProp<any>;
@@ -129,6 +130,8 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
                 {isLoading ? 'Signing in...' : 'Sign in'}
               </Text>
             </TouchableOpacity>
+
+            <SocialAuthButtons />
           </View>
 
           <View style={styles.footer}>

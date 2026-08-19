@@ -67,4 +67,18 @@ export class AppConfigService {
       bucketName: this.configService.get<string>('R2_BUCKET_NAME'),
     };
   }
+
+  getGoogleOAuthConfig() {
+    return {
+      iosClientId: this.configService.get<string>('GOOGLE_OAUTH_IOS_CLIENT_ID'),
+      androidClientId: this.configService.get<string>('GOOGLE_OAUTH_ANDROID_CLIENT_ID'),
+      webClientId: this.configService.get<string>('GOOGLE_OAUTH_WEB_CLIENT_ID'),
+    };
+  }
+
+  getAppleOAuthConfig() {
+    return {
+      bundleId: this.configService.get<string>('APPLE_BUNDLE_ID'),
+    };
+  }
 }

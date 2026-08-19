@@ -3,6 +3,7 @@ import {
   IsEnum,
   IsNotEmpty,
   IsNumber,
+  IsOptional,
   IsString,
   validateSync,
 } from 'class-validator';
@@ -71,6 +72,25 @@ export class EnvironmentVariables {
   @IsString()
   @IsNotEmpty()
   R2_BUCKET_NAME: string;
+
+  // OAuth — Google. We accept tokens from any of these audiences (one per platform).
+  // At least one MUST be set or Google sign-in cannot work.
+  @IsString()
+  @IsOptional()
+  GOOGLE_OAUTH_IOS_CLIENT_ID?: string;
+
+  @IsString()
+  @IsOptional()
+  GOOGLE_OAUTH_ANDROID_CLIENT_ID?: string;
+
+  @IsString()
+  @IsOptional()
+  GOOGLE_OAUTH_WEB_CLIENT_ID?: string;
+
+  // OAuth — Apple. The bundle ID is the audience claim Apple puts in the identity token.
+  @IsString()
+  @IsOptional()
+  APPLE_BUNDLE_ID?: string;
 }
 
 export function validate(config: Record<string, unknown>) {

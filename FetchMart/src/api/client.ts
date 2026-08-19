@@ -101,6 +101,23 @@ class ApiClient {
     await SecureStore.deleteItemAsync(TOKEN_KEY);
   }
 
+  async refreshTokens(): Promise<AuthTokens | null> {
+    const tokens = await this.getTokens();
+    if (!tokens?.refreshToken) return null;
+
+    try {
+      const response = await this.client.post('/auth/refresh', {
+        refreshToken: tokens.refreshToken,
+      });
+      const newTokens: AuthTokens = response.data;
+      await this.setTokens(newTokens);
+      return newTokens;
+    } catch {
+      await this.clearTokens();
+      return null;
+    }
+  }
+
   get instance(): AxiosInstance {
     return this.client;
   }

@@ -1,0 +1,135 @@
+================================================================================
+FETCHMART — PENDING KEYS / PARAMETERS
+================================================================================
+
+[x] MAPBOX SECRET DOWNLOAD TOKEN (sk.)  ← DONE
+    Required for: `npx expo prebuild` (native build step — iOS & Android)
+    Without this the app cannot be compiled. Expo needs it to pull the
+    Mapbox native SDK from their Maven/CocoaPods repositories.
+
+    Where to get it:
+      1. Go to https://account.mapbox.com/access-tokens/
+      2. Create a new token with scope: DOWNLOADS:READ
+      3. It will start with sk.
+
+    Where to put it:
+      FetchMart/app.json  →  "RNMapboxMapsDownloadToken": "sk.YOUR_TOKEN_HERE"
+
+    Public token (pk.) is already set in FetchMart/.env — runtime works once
+    the native build is done with the sk.
+
+--------------------------------------------------------------------------------
+
+[ ] FLUTTERWAVE SECRET KEY
+    Required for: backend payment initiation and webhook verification
+    Provider: Flutterwave v4 (https://developer.flutterwave.com)
+
+    Where to put it:
+      market-backend/.env  →  FLUTTERWAVE_SECRET_KEY=FLWSECK_TEST-xxx
+                               FLUTTERWAVE_WEBHOOK_HASH=your_webhook_hash
+
+    Note: The payment module currently uses Korah Pay. Flutterwave v4
+    integration is pending — see payment migration task.
+
+--------------------------------------------------------------------------------
+
+[ ] GOOGLE PLACES API KEY
+    Required for: address autocomplete in registration / location picker
+    Where to get it: https://console.cloud.google.com/apis/credentials
+    Enable: Places API
+
+    Where to put it:
+      FetchMart/.env  →  EXPO_PUBLIC_GOOGLE_PLACES_API_KEY=YOUR_KEY_HERE
+
+--------------------------------------------------------------------------------
+
+[ ] PAYMENT MIGRATION: Korah Pay → Flutterwave v4
+    Status: PENDING
+    Task: Replace market-backend/src/payments/ with Flutterwave v4 integration
+    Waiting on: Flutterwave secret key + webhook hash above
+
+--------------------------------------------------------------------------------
+
+[ ] GOOGLE SIGN-IN — OAuth 2.0 Client IDs (3 needed)
+    Required for: "Continue with Google" on AuthLanding + Login screens.
+
+    Step 1: Go to https://console.cloud.google.com/apis/credentials
+    Step 2: Click "Create Credentials" → "OAuth client ID" three times:
+
+      (a) Application type: iOS
+          Bundle ID: com.anonymous.FetchMart
+          → produces an iosClientId
+
+      (b) Application type: Android
+          Package name: com.anonymous.FetchMart
+          SHA-1 fingerprint: run this once you have a debug keystore:
+            cd FetchMart/android && ./gradlew signingReport
+          (the SHA-1 of the `debug` variant)
+          → produces an androidClientId
+
+      (c) Application type: Web application
+          (No URIs needed — used internally by the Android SDK to mint idTokens)
+          → produces a webClientId
+
+    Where to put them — TWO places, one per side:
+
+    BACKEND (used to verify incoming idTokens):
+      market-backend/.env →
+        GOOGLE_OAUTH_IOS_CLIENT_ID=xxxxx-yyy.apps.googleusercontent.com
+        GOOGLE_OAUTH_ANDROID_CLIENT_ID=xxxxx-yyy.apps.googleusercontent.com
+        GOOGLE_OAUTH_WEB_CLIENT_ID=xxxxx-yyy.apps.googleusercontent.com
+
+    MOBILE (used to request idTokens from Google):
+      FetchMart/.env →
+        EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=xxxxx-yyy.apps.googleusercontent.com
+        EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID=xxxxx-yyy.apps.googleusercontent.com
+        EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=xxxxx-yyy.apps.googleusercontent.com
+
+      FetchMart/app.json → under the `@react-native-google-signin/google-signin`
+      plugin, replace YOUR_REVERSED_IOS_CLIENT_ID with your iOS client ID
+      reversed. Example:
+        iOS client ID:        123456-abc.apps.googleusercontent.com
+        Reversed (URL scheme): com.googleusercontent.apps.123456-abc
+
+--------------------------------------------------------------------------------
+
+[ ] APPLE SIGN-IN — Apple Developer setup
+    Required for: "Continue with Apple" (iOS only).
+    Cost: requires a paid Apple Developer account ($99/year).
+
+    Step 1: Go to https://developer.apple.com/account/resources/identifiers
+    Step 2: Find your App ID (or create one for `com.anonymous.FetchMart`)
+    Step 3: Edit it and check "Sign In with Apple" capability → Save
+    Step 4: Re-generate provisioning profiles if needed (Xcode usually auto-fixes)
+
+    What you need to know:
+      - The "audience" used to verify Apple's identity tokens IS the bundle ID.
+      - There are no client secrets needed for the native iOS flow.
+
+    Where to put it:
+      market-backend/.env →
+        APPLE_BUNDLE_ID=com.anonymous.FetchMart
+
+    NOTE: Apple Sign-In does NOT work on Android natively. The button is
+    automatically hidden on Android via `appleAuth.isAvailable()`.
+
+--------------------------------------------------------------------------------
+
+[ ] DATABASE MIGRATION — OAuth schema
+    Required for: storing OAuth provider links per user.
+
+    Run from market-backend/:
+      npx prisma migrate dev --name add_oauth_accounts
+
+    What this does:
+      - Makes users.password_hash nullable (OAuth-only users have no password)
+      - Adds the `oauth_accounts` table with (provider, provider_uid) unique
+      - Adds the AuthProvider enum (EMAIL / GOOGLE / APPLE)
+
+    Then install new backend deps:
+      cd market-backend && npm install
+
+    Then install new mobile deps + rebuild native:
+      cd FetchMart && npm install && npx expo prebuild --clean && npx expo run:ios
+
+================================================================================

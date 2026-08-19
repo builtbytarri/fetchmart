@@ -15,7 +15,11 @@ import { AppConfigService } from '../config';
 interface TokenPayload {
   userId: string;
   role: string;
+  exp: number;
 }
+
+// Warn client this many ms before its token expires so it can refresh without dropping
+const TOKEN_EXPIRY_WARNING_MS = 60 * 1000;
 
 @WebSocketGateway({
   cors: {
@@ -31,19 +35,44 @@ export class AppWebSocketGateway implements OnGatewayConnection, OnGatewayDiscon
 
   constructor(private readonly appConfig: AppConfigService) {}
 
+  private verifyToken(token: string): TokenPayload | null {
+    try {
+      const jwtConfig = this.appConfig.getJwtConfig();
+      return jwt.verify(token, jwtConfig.accessSecret!) as unknown as TokenPayload;
+    } catch {
+      return null;
+    }
+  }
+
+  private scheduleExpiryWarning(client: Socket, expiresAtMs: number): ReturnType<typeof setTimeout> | null {
+    const delay = expiresAtMs - Date.now() - TOKEN_EXPIRY_WARNING_MS;
+    if (delay <= 0) {
+      // Token already near expiry — warn right away
+      client.emit('token_expiring', { expiresAt: expiresAtMs });
+      return null;
+    }
+    return setTimeout(() => {
+      client.emit('token_expiring', { expiresAt: expiresAtMs });
+    }, delay);
+  }
+
   async handleConnection(client: Socket) {
     try {
       const token = client.handshake.auth.token || client.handshake.headers.authorization?.replace('Bearer ', '');
-      
+
       if (!token) {
         this.logger.warn(`Client ${client.id} connection rejected: No token`);
         client.disconnect();
         return;
       }
 
-      const jwtConfig = this.appConfig.getJwtConfig();
-      const payload = jwt.verify(token, jwtConfig.accessSecret!) as unknown as TokenPayload;
-      
+      const payload = this.verifyToken(token);
+      if (!payload) {
+        this.logger.warn(`Client ${client.id} connection rejected: Invalid token`);
+        client.disconnect();
+        return;
+      }
+
       client.data.userId = payload.userId;
       client.data.role = payload.role;
 
@@ -54,14 +83,20 @@ export class AppWebSocketGateway implements OnGatewayConnection, OnGatewayDiscon
       }
       this.userSockets.get(payload.userId)!.add(client.id);
 
+      client.data.expiryWarningTimer = this.scheduleExpiryWarning(client, payload.exp * 1000);
+
       this.logger.log(`Client ${client.id} connected as user ${payload.userId}`);
     } catch (error) {
-      this.logger.warn(`Client ${client.id} connection rejected: Invalid token`);
+      this.logger.warn(`Client ${client.id} connection rejected: ${error}`);
       client.disconnect();
     }
   }
 
   handleDisconnect(client: Socket) {
+    if (client.data.expiryWarningTimer) {
+      clearTimeout(client.data.expiryWarningTimer);
+    }
+
     const userId = client.data.userId;
     if (userId) {
       const sockets = this.userSockets.get(userId);
@@ -73,6 +108,42 @@ export class AppWebSocketGateway implements OnGatewayConnection, OnGatewayDiscon
       }
     }
     this.logger.log(`Client ${client.id} disconnected`);
+  }
+
+  @SubscribeMessage('reauth')
+  async handleReauth(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { token: string },
+  ) {
+    if (!data?.token) {
+      client.disconnect();
+      return { event: 'reauth_error', data: { message: 'No token provided' } };
+    }
+
+    const payload = this.verifyToken(data.token);
+    if (!payload) {
+      client.disconnect();
+      return { event: 'reauth_error', data: { message: 'Invalid token' } };
+    }
+
+    if (client.data.expiryWarningTimer) {
+      clearTimeout(client.data.expiryWarningTimer);
+    }
+
+    const previousUserId = client.data.userId;
+    client.data.userId = payload.userId;
+    client.data.role = payload.role;
+
+    // Handles the edge case where a token belongs to a different user (should never happen in practice)
+    if (previousUserId && previousUserId !== payload.userId) {
+      await client.leave(`user:${previousUserId}`);
+      await client.join(`user:${payload.userId}`);
+    }
+
+    client.data.expiryWarningTimer = this.scheduleExpiryWarning(client, payload.exp * 1000);
+
+    this.logger.log(`Client ${client.id} re-authenticated as user ${payload.userId}`);
+    return { event: 'reauth_success', data: { userId: payload.userId } };
   }
 
   @SubscribeMessage('subscribe:order')

@@ -24,10 +24,18 @@ enum UserStatus {
   SUSPENDED
 }
 
+enum AuthProvider {
+  EMAIL
+  GOOGLE
+  APPLE
+}
+
 model User {
   id           String     @id @default(uuid())
   email        String     @unique
-  passwordHash String     @map("password_hash")
+  // Nullable: OAuth-only users (Google/Apple) don't have a password.
+  // Login flow MUST reject email/password attempts when this is null.
+  passwordHash String?    @map("password_hash")
   role         UserRole
   name         String
   phone        String?
@@ -40,11 +48,32 @@ model User {
 
   refreshTokens       RefreshToken[]
   passwordResetTokens PasswordResetToken[]
+  oauthAccounts       OAuthAccount[]
   store               Store?
   orders              Order[]
   rider               Rider?
 
   @@map("users")
+}
+
+model OAuthAccount {
+  id          String       @id @default(uuid())
+  userId      String       @map("user_id")
+  provider    AuthProvider
+  // Provider's stable user identifier (Google `sub`, Apple `sub`).
+  // Must NEVER change for the lifetime of the user's account at the provider.
+  providerUid String       @map("provider_uid")
+  // Email reported by the provider — may differ from User.email
+  // (e.g. Apple privaterelay) and is informational only.
+  email       String?
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // A given (provider, providerUid) can only be tied to one User account.
+  @@unique([provider, providerUid])
+  @@index([userId])
+  @@map("oauth_accounts")
 }
 
 model PasswordResetToken {
