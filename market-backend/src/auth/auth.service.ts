@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   UnauthorizedException,
   ConflictException,
   BadRequestException,
@@ -10,9 +11,14 @@ import * as crypto from 'crypto';
 import { PrismaService } from '../database';
 import { AppConfigService } from '../config';
 import { EmailService } from '../email';
+import { SmsService } from '../sms';
 import { RegisterDto, LoginDto, RefreshTokenDto, ForgotPasswordDto, ResetPasswordDto, SendOtpDto, VerifyOtpDto, GoogleSignInDto, AppleSignInDto } from './dto';
 import { AuthProvider, UserRole, UserStatus } from '@prisma/client';
 import { OAuthService, VerifiedIdentity } from './oauth.service';
+
+// Verification-code resend limits — see sendOtp().
+const OTP_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const OTP_MAX_PER_WINDOW = 3;
 
 interface TokenPayload {
   userId: string;
@@ -26,6 +32,7 @@ export interface AuthTokens {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   private readonly accessTokenExpiry = '15m';
   private readonly refreshTokenExpiry = '7d';
   private readonly resetTokenExpiry = 30 * 60 * 1000; // 30 minutes
@@ -34,6 +41,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly appConfig: AppConfigService,
     private readonly emailService: EmailService,
+    private readonly smsService: SmsService,
     private readonly oauthService: OAuthService,
   ) {}
 
@@ -358,14 +366,38 @@ export class AuthService {
   }
 
   async sendOtp(dto: SendOtpDto): Promise<{ message: string }> {
-    const code = Math.floor(1000 + Math.random() * 9000).toString();
+    // Throttle resends. Each SMS costs real money on Termii's prepaid DND
+    // route, and without a cap the unauthenticated send-otp endpoint can be
+    // used to drain the wallet or spam a stranger's phone.
+    const recentSends = await this.prisma.phoneOtp.count({
+      where: {
+        phone: dto.phone,
+        createdAt: { gt: new Date(Date.now() - OTP_WINDOW_MS) },
+      },
+    });
+    if (recentSends >= OTP_MAX_PER_WINDOW) {
+      throw new BadRequestException(
+        'Too many verification codes requested. Please wait a few minutes and try again.',
+      );
+    }
+
+    // Review/test numbers get a fixed code and no SMS. Our Termii sender ID is
+    // registered for Nigeria only, so an App Review tester on a US number would
+    // otherwise be stuck on the verification screen with no way forward.
+    const testCode = this.appConfig
+      .getSmsConfig()
+      .testNumbers.get(dto.phone.replace(/\D/g, ''));
+
+    const code = testCode ?? Math.floor(1000 + Math.random() * 9000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    await this.prisma.phoneOtp.deleteMany({
+    // Invalidate any outstanding code so only the newest one works.
+    await this.prisma.phoneOtp.updateMany({
       where: { phone: dto.phone, verifiedAt: null },
+      data: { expiresAt: new Date() },
     });
 
-    await this.prisma.phoneOtp.create({
+    const record = await this.prisma.phoneOtp.create({
       data: {
         phone: dto.phone,
         code,
@@ -373,9 +405,22 @@ export class AuthService {
       },
     });
 
-    console.log(`\n========================================`);
-    console.log(`📱 OTP for ${dto.phone}: ${code}`);
-    console.log(`========================================\n`);
+    if (testCode) {
+      this.logger.warn(`Test number ${dto.phone} — fixed code issued, no SMS sent`);
+      return { message: 'OTP sent successfully' };
+    }
+
+    try {
+      await this.smsService.sendOtp(dto.phone, code);
+    } catch (err) {
+      // Don't leave a live code behind for a message that never went out —
+      // otherwise the throttle counts a send the user never received.
+      await this.prisma.phoneOtp.delete({ where: { id: record.id } }).catch(() => undefined);
+      this.logger.error(
+        `Failed to send OTP to ${dto.phone}: ${(err as Error).message}`,
+      );
+      throw err;
+    }
 
     return { message: 'OTP sent successfully' };
   }

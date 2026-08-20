@@ -10,6 +10,12 @@ export interface UpdateAvailabilityRequest {
   isAvailable: boolean;
 }
 
+export interface UpdateVehicleRequest {
+  vehicleType?: 'bicycle' | 'motorcycle' | 'car';
+  vehiclePlate?: string;
+  vehicleColor?: string;
+}
+
 export const ridersApi = {
   onboard: async (): Promise<Rider> => {
     const response = await api.post<Rider>('/riders/onboard');
@@ -28,6 +34,11 @@ export const ridersApi = {
 
   getMe: async (): Promise<Rider> => {
     const response = await api.get<Rider>('/riders/me');
+    return response.data;
+  },
+
+  updateVehicle: async (data: UpdateVehicleRequest): Promise<Rider> => {
+    const response = await api.patch<Rider>('/riders/vehicle', data);
     return response.data;
   },
 };

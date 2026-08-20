@@ -1,4 +1,5 @@
 export * from './DashboardScreen';
+export * from './PendingVerificationScreen';
 export * from './ProductsScreen';
 export * from './StoreOrdersScreen';
 export * from './ProfileScreen';

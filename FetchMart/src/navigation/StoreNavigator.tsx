@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { View, ActivityIndicator } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,6 +15,7 @@ import {
   EditProductScreen,
   StoreWalletScreen,
   StoreAnalyticsScreen,
+  PendingVerificationScreen,
 } from '../screens/store';
 import {
   EditProfileScreen,
@@ -21,26 +23,12 @@ import {
   NotificationsSettingsScreen,
   HelpSupportScreen,
   TermsConditionsScreen,
+  BankAccountScreen,
 } from '../screens/shared';
 import { COLORS } from '../constants/config';
-
-export type StoreStackParamList = {
-  StoreTabs: undefined;
-  Products: undefined;
-  AddProduct: undefined;
-  EditProduct: { productId: string };
-  ManageCategories: { storeId: string };
-  StoreOrders: undefined;
-  CreateStore: undefined;
-  EditProfile: undefined;
-  StoreSettings: undefined;
-  PaymentMethods: undefined;
-  Notifications: undefined;
-  HelpSupport: undefined;
-  TermsConditions: undefined;
-  StoreWallet: undefined;
-  StoreAnalytics: undefined;
-};
+import { StoreStackParamList } from './types';
+import { StoreStatusContext } from './storeStatusContext';
+import { storesApi } from '../api';
 
 export type StoreTabParamList = {
   Dashboard: undefined;
@@ -96,13 +84,52 @@ const StoreTabs: React.FC = () => {
   );
 };
 
+// 'loading'  → still resolving the store status
+// 'no-store' → store-role user hasn't created a store yet (show the app so they
+//              can create one from the Dashboard's "Create Your Store" card)
+// 'pending'  → a store exists but admin hasn't verified it yet
+// 'verified' → store exists and is approved
+type VerificationState = 'loading' | 'no-store' | 'pending' | 'verified';
+
 export const StoreNavigator: React.FC = () => {
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
+  const [verificationState, setVerificationState] = useState<VerificationState>('loading');
+
+  const checkVerification = useCallback(async () => {
+    try {
+      const stores = await storesApi.getMyStores();
+      if (stores.length === 0) {
+        // No store yet — let them into the app to create one.
+        setVerificationState('no-store');
+      } else if (stores[0].isVerified) {
+        setVerificationState('verified');
+      } else {
+        setVerificationState('pending');
+      }
+    } catch {
+      // Fail open so a network error doesn't permanently block the store
+      setVerificationState('verified');
+    }
+  }, []);
+
+  useEffect(() => {
+    checkVerification();
+  }, [checkVerification]);
+
+  let content: React.ReactNode;
+
+  if (verificationState === 'loading') {
+    content = (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
+    );
+  } else if (verificationState === 'pending') {
+    content = <PendingVerificationScreen onRefresh={checkVerification} />;
+  } else {
+    // 'verified' and 'no-store' both render the full store app. A no-store user
+    // lands on the Dashboard, which shows the "Create Your Store" card.
+    content = (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="StoreTabs" component={StoreTabs} />
       <Stack.Screen name="Products" component={ProductsScreen} />
       <Stack.Screen name="StoreOrders" component={StoreOrdersScreen} />
@@ -118,6 +145,14 @@ export const StoreNavigator: React.FC = () => {
       <Stack.Screen name="EditProduct" component={EditProductScreen} />
       <Stack.Screen name="StoreWallet" component={StoreWalletScreen} />
       <Stack.Screen name="StoreAnalytics" component={StoreAnalyticsScreen} />
+      <Stack.Screen name="BankAccount" component={BankAccountScreen} />
     </Stack.Navigator>
+    );
+  }
+
+  return (
+    <StoreStatusContext.Provider value={{ refresh: checkVerification }}>
+      {content}
+    </StoreStatusContext.Provider>
   );
 };

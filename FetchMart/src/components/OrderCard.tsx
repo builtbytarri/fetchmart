@@ -50,7 +50,8 @@ const getStatusLabel = (status: OrderStatus): string => {
 };
 
 export const OrderCard: React.FC<OrderCardProps> = ({ order, onPress }) => {
-  const formatPrice = (price: number) => `₦${price.toLocaleString()}`;
+  const formatPrice = (price: number | string) =>
+    `₦${Number(price).toLocaleString('en-NG')}`;
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('en-NG', {
       day: 'numeric',
@@ -89,7 +90,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order, onPress }) => {
 
       <View style={styles.itemsContainer}>
         <Text style={styles.itemsLabel}>
-          {order.orderItems.length} item{order.orderItems.length > 1 ? 's' : ''}
+          {(order.orderItems ?? []).length} item{(order.orderItems ?? []).length !== 1 ? 's' : ''}
         </Text>
         <Text style={styles.total}>{formatPrice(order.totalAmount)}</Text>
       </View>

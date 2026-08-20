@@ -16,6 +16,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
 import { productsApi, storesApi, Category } from '../../api';
+import { ImageUploadField, ProductMeasureFields } from '../../components';
+import { ProductUnit, StockMode } from '../../types';
 import { COLORS, SPACING } from '../../constants/config';
 
 type Props = {
@@ -27,6 +29,10 @@ export const AddProductScreen: React.FC<Props> = ({ navigation }) => {
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
   const [stockQuantity, setStockQuantity] = useState('');
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [unit, setUnit] = useState<ProductUnit>('PIECE');
+  const [stepSize, setStepSize] = useState('1');
+  const [stockMode, setStockMode] = useState<StockMode>('COUNTED');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
@@ -84,8 +90,13 @@ export const AddProductScreen: React.FC<Props> = ({ navigation }) => {
         name: name.trim(),
         description: description.trim() || undefined,
         price: Number(price),
-        stockQuantity: stockQuantity ? Number(stockQuantity) : 0,
+        // An IN_STOCK product carries no meaningful count.
+        stockQuantity: stockMode === 'COUNTED' && stockQuantity ? Number(stockQuantity) : 0,
         categoryId: selectedCategoryId || undefined,
+        imageUrl: imageUrl || undefined,
+        unit,
+        stepSize: Number(stepSize) || 1,
+        stockMode,
       });
 
       Alert.alert('Success', 'Product added successfully!', [
@@ -118,6 +129,13 @@ export const AddProductScreen: React.FC<Props> = ({ navigation }) => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
+          <ImageUploadField
+            label="Product Photo"
+            value={imageUrl}
+            onChange={setImageUrl}
+            folder="products"
+          />
+
           {/* Product Name */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Product Name *</Text>
@@ -160,18 +178,16 @@ export const AddProductScreen: React.FC<Props> = ({ navigation }) => {
             {errors.price && <Text style={styles.errorText}>{errors.price}</Text>}
           </View>
 
-          {/* Stock Quantity */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Stock Quantity</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="0"
-              placeholderTextColor={COLORS.textSecondary}
-              value={stockQuantity}
-              onChangeText={setStockQuantity}
-              keyboardType="numeric"
-            />
-          </View>
+          <ProductMeasureFields
+            unit={unit}
+            onUnitChange={setUnit}
+            stepSize={stepSize}
+            onStepSizeChange={setStepSize}
+            stockMode={stockMode}
+            onStockModeChange={setStockMode}
+            stockQuantity={stockQuantity}
+            onStockQuantityChange={setStockQuantity}
+          />
 
           {/* Category */}
           <View style={styles.inputGroup}>

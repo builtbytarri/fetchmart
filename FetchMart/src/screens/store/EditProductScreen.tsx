@@ -17,6 +17,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
 import { productsApi, storesApi, Category } from '../../api';
+import { ImageUploadField, ProductMeasureFields } from '../../components';
+import { ProductUnit, StockMode } from '../../types';
 import { Product } from '../../types';
 import { COLORS, SPACING } from '../../constants/config';
 
@@ -33,6 +35,10 @@ export const EditProductScreen: React.FC<Props> = ({ navigation, route }) => {
   const [price, setPrice] = useState('');
   const [stockQuantity, setStockQuantity] = useState('');
   const [isAvailable, setIsAvailable] = useState(true);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [unit, setUnit] = useState<ProductUnit>('PIECE');
+  const [stepSize, setStepSize] = useState('1');
+  const [stockMode, setStockMode] = useState<StockMode>('COUNTED');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
@@ -49,6 +55,10 @@ export const EditProductScreen: React.FC<Props> = ({ navigation, route }) => {
       setPrice(String(prod.price));
       setStockQuantity(String(prod.stockQuantity));
       setIsAvailable(prod.isAvailable);
+      setImageUrl(prod.imageUrl ?? null);
+      setUnit(prod.unit ?? 'PIECE');
+      setStepSize(String(prod.stepSize ?? 1));
+      setStockMode(prod.stockMode ?? 'COUNTED');
       setSelectedCategoryId(prod.categoryId);
 
       // Fetch categories for the store
@@ -100,9 +110,13 @@ export const EditProductScreen: React.FC<Props> = ({ navigation, route }) => {
         name: name.trim(),
         description: description.trim() || undefined,
         price: Number(price),
-        stockQuantity: Number(stockQuantity) || 0,
+        stockQuantity: stockMode === 'COUNTED' ? Number(stockQuantity) || 0 : 0,
+        unit,
+        stepSize: Number(stepSize) || 1,
+        stockMode,
         isAvailable,
         categoryId: selectedCategoryId,
+        imageUrl: imageUrl ?? null,
       });
 
       Alert.alert('Success', 'Product updated successfully!', [
@@ -167,6 +181,13 @@ export const EditProductScreen: React.FC<Props> = ({ navigation, route }) => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
+          <ImageUploadField
+            label="Product Photo"
+            value={imageUrl}
+            onChange={setImageUrl}
+            folder="products"
+          />
+
           {/* Product Name */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Product Name *</Text>
@@ -209,18 +230,16 @@ export const EditProductScreen: React.FC<Props> = ({ navigation, route }) => {
             {errors.price && <Text style={styles.errorText}>{errors.price}</Text>}
           </View>
 
-          {/* Stock Quantity */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Stock Quantity</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="0"
-              placeholderTextColor={COLORS.textSecondary}
-              value={stockQuantity}
-              onChangeText={setStockQuantity}
-              keyboardType="numeric"
-            />
-          </View>
+          <ProductMeasureFields
+            unit={unit}
+            onUnitChange={setUnit}
+            stepSize={stepSize}
+            onStepSizeChange={setStepSize}
+            stockMode={stockMode}
+            onStockModeChange={setStockMode}
+            stockQuantity={stockQuantity}
+            onStockQuantityChange={setStockQuantity}
+          />
 
           {/* Category */}
           <View style={styles.inputGroup}>

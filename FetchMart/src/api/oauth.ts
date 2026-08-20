@@ -1,15 +1,25 @@
 /**
- * OAuth stubs — active while running on a dev build that doesn't include
- * the Google/Apple native modules.
+ * OAuth — Apple Sign In is live; Google is stubbed.
  *
- * When you're ready to enable social login:
- *  1. Get Google client IDs + enable Apple capability (see todo.txt)
- *  2. Run: npx expo prebuild --clean && npx expo run:ios
- *  3. Replace this file with oauth.native.ts (the real implementation)
+ * Apple works with no extra credentials: the client gets an identity token from
+ * the OS and the backend verifies it against Apple's JWKs (see oauth.service.ts).
+ * The only requirements are `usesAppleSignIn` in app.json, the "Sign In with
+ * Apple" capability on the App ID, and APPLE_BUNDLE_ID set on the server.
  *
- * The UI checks `isAvailable()` before rendering buttons, so nothing
- * shows or crashes in the meantime.
+ * Google needs OAuth client IDs from Google Cloud Console. Until those exist the
+ * @react-native-google-signin plugin is deliberately left out of app.json — its
+ * placeholder `iosUrlScheme` gets baked into Info.plist and App Store Connect
+ * rejects the binary (ITMS-90158). To enable Google later:
+ *   1. Create iOS / Android / Web OAuth client IDs, put them in .env
+ *   2. Re-add the plugin to app.json with the real reversed iOS client ID
+ *   3. Swap the googleAuth export below for the one in oauth.native-ready.ts
+ *
+ * AuthLandingScreen checks availability before rendering either button, so the
+ * Google button stays hidden while it is stubbed.
  */
+
+import { Platform } from 'react-native';
+import * as AppleAuthentication from 'expo-apple-authentication';
 
 export interface GoogleAuthResult { idToken: string }
 export interface AppleAuthResult {
@@ -21,16 +31,32 @@ export interface AppleAuthResult {
 export const googleAuth = {
   isAvailable: () => false as boolean,
   async signIn(): Promise<GoogleAuthResult> {
-    throw new Error('Google Sign-In requires a native build. See todo.txt.');
+    throw new Error('Google Sign-In is not configured yet.');
   },
   async signOut() {},
   statusCodes: { SIGN_IN_CANCELLED: -1, IN_PROGRESS: -2, PLAY_SERVICES_NOT_AVAILABLE: -3 },
 };
 
 export const appleAuth = {
-  async isAvailable() { return false; },
-  async signIn(): Promise<AppleAuthResult> {
-    throw new Error('Apple Sign-In requires a native build. See todo.txt.');
+  async isAvailable() {
+    if (Platform.OS !== 'ios') return false;
+    try { return await AppleAuthentication.isAvailableAsync(); } catch { return false; }
   },
-  getNativeModule: () => null as any,
+
+  async signIn(): Promise<AppleAuthResult> {
+    const credential = await AppleAuthentication.signInAsync({
+      requestedScopes: [
+        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+      ],
+    });
+    if (!credential.identityToken) throw new Error('Apple did not return an identity token');
+    return {
+      identityToken: credential.identityToken,
+      firstName: credential.fullName?.givenName ?? undefined,
+      lastName: credential.fullName?.familyName ?? undefined,
+    };
+  },
+
+  getNativeModule: () => AppleAuthentication,
 };

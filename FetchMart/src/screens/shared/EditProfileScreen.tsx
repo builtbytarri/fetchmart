@@ -17,6 +17,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuthStore } from '../../store';
 import { usersApi } from '../../api';
 import { COLORS, SPACING } from '../../constants/config';
+import { LocationPickerScreen } from '../auth/LocationPickerScreen';
+import { AddressAutocomplete } from '../../components';
 
 type Props = {
   navigation: NativeStackNavigationProp<any>;
@@ -26,7 +28,20 @@ export const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
   const { user, loadUser } = useAuthStore();
   const [name, setName] = useState(user?.name || '');
   const [phone, setPhone] = useState(user?.phone || '');
+  const [address, setAddress] = useState(user?.address || '');
+  const [latitude, setLatitude] = useState<number | null>(user?.latitude ?? null);
+  const [longitude, setLongitude] = useState<number | null>(user?.longitude ?? null);
+  const [showMapPicker, setShowMapPicker] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const handleLocationSelected = ({ latitude: lat, longitude: lng, address: addr }: {
+    latitude: number; longitude: number; address: string;
+  }) => {
+    setLatitude(lat);
+    setLongitude(lng);
+    setAddress(addr);
+    setShowMapPicker(false);
+  };
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -39,6 +54,9 @@ export const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
       await usersApi.updateProfile({
         name: name.trim(),
         phone: phone.trim() || undefined,
+        address: address.trim() || undefined,
+        latitude: latitude ?? undefined,
+        longitude: longitude ?? undefined,
       });
       await loadUser();
       Alert.alert('Success', 'Profile updated successfully', [
@@ -50,6 +68,15 @@ export const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
       setIsLoading(false);
     }
   };
+
+  if (showMapPicker) {
+    return (
+      <LocationPickerScreen
+        onLocationSelected={handleLocationSelected}
+        onBack={() => setShowMapPicker(false)}
+      />
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -78,12 +105,9 @@ export const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
                 {name?.charAt(0).toUpperCase() || 'U'}
               </Text>
             </View>
-            <TouchableOpacity style={styles.changePhotoButton}>
-              <Text style={styles.changePhotoText}>Change Photo</Text>
-            </TouchableOpacity>
           </View>
 
-          {/* Form */}
+          {/* Basic info */}
           <View style={styles.form}>
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Full Name</Text>
@@ -119,6 +143,40 @@ export const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
             </View>
           </View>
 
+          {/* Delivery address */}
+          <View style={styles.form}>
+            <Text style={styles.sectionTitle}>Delivery Address</Text>
+
+            <View style={styles.inputGroup}>
+              <AddressAutocomplete
+                value={address}
+                placeholder="Search for your address"
+                onSelect={({ address: addr, latitude: lat, longitude: lng }) => {
+                  setAddress(addr);
+                  setLatitude(lat);
+                  setLongitude(lng);
+                }}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={styles.mapPickerBtn}
+              onPress={() => setShowMapPicker(true)}
+            >
+              <Ionicons name="map-outline" size={18} color={COLORS.primary} />
+              <Text style={styles.mapPickerText}>Pick location on map</Text>
+            </TouchableOpacity>
+
+            {latitude !== null && longitude !== null && (
+              <View style={styles.locationConfirmed}>
+                <Ionicons name="checkmark-circle" size={16} color={COLORS.primary} />
+                <Text style={styles.locationConfirmedText} numberOfLines={2}>
+                  {address || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`}
+                </Text>
+              </View>
+            )}
+          </View>
+
           <View style={{ height: 100 }} />
         </ScrollView>
 
@@ -142,13 +200,8 @@ export const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
-  keyboardView: {
-    flex: 1,
-  },
+  container: { flex: 1, backgroundColor: '#F5F5F5' },
+  keyboardView: { flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -159,14 +212,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  scrollView: {
-    flex: 1,
-  },
+  headerTitle: { fontSize: 18, fontWeight: '600', color: COLORS.text },
+  scrollView: { flex: 1 },
   avatarSection: {
     alignItems: 'center',
     paddingVertical: SPACING.lg,
@@ -180,33 +227,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  avatarText: {
-    fontSize: 40,
-    fontWeight: '700',
-    color: COLORS.white,
-  },
-  changePhotoButton: {
-    marginTop: SPACING.sm,
-  },
-  changePhotoText: {
-    fontSize: 14,
-    color: COLORS.primary,
-    fontWeight: '500',
-  },
+  avatarText: { fontSize: 40, fontWeight: '700', color: COLORS.white },
   form: {
     backgroundColor: COLORS.white,
     marginTop: SPACING.md,
     padding: SPACING.md,
   },
-  inputGroup: {
-    marginBottom: SPACING.lg,
-  },
-  label: {
+  sectionTitle: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
     color: COLORS.text,
-    marginBottom: SPACING.xs,
+    marginBottom: SPACING.md,
   },
+  inputGroup: { marginBottom: SPACING.md },
+  label: { fontSize: 14, fontWeight: '500', color: COLORS.text, marginBottom: SPACING.xs },
   input: {
     backgroundColor: '#F5F5F5',
     borderWidth: 1,
@@ -217,15 +251,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.text,
   },
-  inputDisabled: {
-    backgroundColor: '#EEEEEE',
-    color: COLORS.textSecondary,
+  inputDisabled: { backgroundColor: '#EEEEEE', color: COLORS.textSecondary },
+  helperText: { fontSize: 12, color: COLORS.textSecondary, marginTop: 4 },
+  mapPickerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: SPACING.sm,
   },
-  helperText: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    marginTop: 4,
+  mapPickerText: { fontSize: 14, color: COLORS.primary, fontWeight: '500' },
+  locationConfirmed: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8F5E9',
+    borderRadius: 10,
+    padding: SPACING.sm,
+    marginTop: SPACING.sm,
+    gap: SPACING.xs,
   },
+  locationConfirmedText: { flex: 1, fontSize: 13, color: COLORS.text },
   bottomBar: {
     backgroundColor: COLORS.white,
     paddingHorizontal: SPACING.md,
@@ -239,12 +283,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
   },
-  saveButtonDisabled: {
-    opacity: 0.7,
-  },
-  saveButtonText: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  saveButtonDisabled: { opacity: 0.7 },
+  saveButtonText: { color: COLORS.white, fontSize: 16, fontWeight: '600' },
 });

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING } from '../constants/config';
+import { formatUnitPrice } from '../utils/quantity';
 import { Product } from '../types';
 
 interface ProductCardProps {
@@ -40,10 +41,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           {product.name}
         </Text>
         {product.category && (
-          <Text style={styles.category}>{product.category}</Text>
+          <Text style={styles.category}>{typeof product.category === 'object' ? product.category?.name : product.category}</Text>
         )}
         <View style={styles.footer}>
-          <Text style={styles.price}>{formatPrice(product.price)}</Text>
+          <Text style={styles.price}>
+            {formatUnitPrice(Number(product.price), product.unit)}
+          </Text>
           {onAddToCart && product.isAvailable && (
             <TouchableOpacity
               style={styles.addButton}

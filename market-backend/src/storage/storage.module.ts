@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { StorageController } from './storage.controller';
 import { StorageService } from './storage.service';
-import { R2StorageProvider } from './r2.provider';
+import { CloudinaryStorageProvider } from './cloudinary.provider';
 import { STORAGE_PROVIDER } from './storage.interface';
 import { AuthModule } from '../auth';
 
@@ -11,7 +11,7 @@ import { AuthModule } from '../auth';
   providers: [
     {
       provide: STORAGE_PROVIDER,
-      useClass: R2StorageProvider,
+      useClass: CloudinaryStorageProvider,
     },
     StorageService,
   ],

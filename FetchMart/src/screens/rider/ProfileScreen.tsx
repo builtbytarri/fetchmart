@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,11 +6,13 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuthStore } from '../../store';
+import { ridersApi, deliveryApi } from '../../api';
 import { COLORS, SPACING } from '../../constants/config';
 
 type Props = {
@@ -19,6 +21,14 @@ type Props = {
 
 export const RiderProfileScreen: React.FC<Props> = ({ navigation }) => {
   const { user, logout } = useAuthStore();
+  const [deliveryCount, setDeliveryCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    deliveryApi
+      .getCompletedDeliveries()
+      .then((d) => setDeliveryCount(d.length))
+      .catch(() => setDeliveryCount(0));
+  }, []);
 
   const handleLogout = () => {
     Alert.alert(
@@ -26,7 +36,18 @@ export const RiderProfileScreen: React.FC<Props> = ({ navigation }) => {
       'Are you sure you want to logout?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Logout', style: 'destructive', onPress: logout },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await ridersApi.updateAvailability({ isAvailable: false });
+            } catch {
+              // best-effort
+            }
+            logout();
+          },
+        },
       ]
     );
   };
@@ -65,13 +86,12 @@ export const RiderProfileScreen: React.FC<Props> = ({ navigation }) => {
         {/* Stats Card */}
         <View style={styles.statsCard}>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>0</Text>
+            {deliveryCount === null ? (
+              <ActivityIndicator size="small" color={COLORS.primary} />
+            ) : (
+              <Text style={styles.statValue}>{deliveryCount}</Text>
+            )}
             <Text style={styles.statLabel}>Total Deliveries</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>4.9</Text>
-            <Text style={styles.statLabel}>Rating</Text>
           </View>
         </View>
 
@@ -105,20 +125,13 @@ export const RiderProfileScreen: React.FC<Props> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
+  container: { flex: 1, backgroundColor: '#F5F5F5' },
   header: {
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.md,
     backgroundColor: COLORS.white,
   },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: COLORS.text,
-  },
+  headerTitle: { fontSize: 24, fontWeight: '700', color: COLORS.text },
   userCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -136,20 +149,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  userInfo: {
-    flex: 1,
-    marginLeft: SPACING.md,
-  },
-  userName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  userEmail: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    marginTop: 2,
-  },
+  userInfo: { flex: 1, marginLeft: SPACING.md },
+  userName: { fontSize: 18, fontWeight: '600', color: COLORS.text },
+  userEmail: { fontSize: 14, color: COLORS.textSecondary, marginTop: 2 },
   roleBadge: {
     backgroundColor: '#E3F2FD',
     paddingHorizontal: SPACING.sm,
@@ -158,11 +160,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginTop: SPACING.xs,
   },
-  roleText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#1976D2',
-  },
+  roleText: { fontSize: 12, fontWeight: '500', color: '#1976D2' },
   statsCard: {
     flexDirection: 'row',
     backgroundColor: COLORS.white,
@@ -170,25 +168,11 @@ const styles = StyleSheet.create({
     marginTop: SPACING.md,
     padding: SPACING.md,
     borderRadius: 16,
+    justifyContent: 'center',
   },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: COLORS.text,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    marginTop: 4,
-  },
-  statDivider: {
-    width: 1,
-    backgroundColor: '#F0F0F0',
-  },
+  statItem: { alignItems: 'center', minHeight: 50, justifyContent: 'center' },
+  statValue: { fontSize: 24, fontWeight: '700', color: COLORS.text },
+  statLabel: { fontSize: 12, color: COLORS.textSecondary, marginTop: 4 },
   menuContainer: {
     backgroundColor: COLORS.white,
     marginHorizontal: SPACING.md,
@@ -212,12 +196,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  menuLabel: {
-    flex: 1,
-    fontSize: 15,
-    color: COLORS.text,
-    marginLeft: SPACING.sm,
-  },
+  menuLabel: { flex: 1, fontSize: 15, color: COLORS.text, marginLeft: SPACING.sm },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -228,10 +207,5 @@ const styles = StyleSheet.create({
     padding: SPACING.md,
     borderRadius: 16,
   },
-  logoutText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: COLORS.error,
-    marginLeft: SPACING.sm,
-  },
+  logoutText: { fontSize: 16, fontWeight: '500', color: COLORS.error, marginLeft: SPACING.sm },
 });

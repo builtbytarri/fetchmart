@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { COLORS, SPACING } from '../../constants/config';
+import { ridersApi } from '../../api';
 
 type Props = {
   navigation: NativeStackNavigationProp<any>;
@@ -29,21 +30,57 @@ export const VehicleInfoScreen: React.FC<Props> = ({ navigation }) => {
   const [plateNumber, setPlateNumber] = useState('');
   const [vehicleColor, setVehicleColor] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    ridersApi.getMe()
+      .then((rider) => {
+        if (rider.vehicleType) setVehicleType(rider.vehicleType);
+        if (rider.vehiclePlate) setPlateNumber(rider.vehiclePlate);
+        if (rider.vehicleColor) setVehicleColor(rider.vehicleColor);
+      })
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
+  }, []);
 
   const handleSave = async () => {
+    if (!plateNumber.trim()) {
+      Alert.alert('Missing info', 'Please enter your plate number');
+      return;
+    }
     setIsSaving(true);
     try {
-      // TODO: Save vehicle info to backend
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await ridersApi.updateVehicle({
+        vehicleType: vehicleType as 'bicycle' | 'motorcycle' | 'car',
+        vehiclePlate: plateNumber.trim().toUpperCase(),
+        vehicleColor: vehicleColor.trim(),
+      });
       Alert.alert('Success', 'Vehicle information updated', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
-    } catch (err) {
-      Alert.alert('Error', 'Failed to update vehicle information');
+    } catch (err: any) {
+      Alert.alert('Error', err.response?.data?.message ?? 'Failed to update vehicle information');
     } finally {
       setIsSaving(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color={COLORS.text} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Vehicle Info</Text>
+          <View style={{ width: 24 }} />
+        </View>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -98,10 +135,10 @@ export const VehicleInfoScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={styles.sectionTitle}>Vehicle Details</Text>
           <View style={styles.formCard}>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Plate Number</Text>
+              <Text style={styles.label}>Plate Number *</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Enter plate number"
+                placeholder="e.g., ABC-123DE"
                 placeholderTextColor={COLORS.textSecondary}
                 value={plateNumber}
                 onChangeText={setPlateNumber}
@@ -109,7 +146,7 @@ export const VehicleInfoScreen: React.FC<Props> = ({ navigation }) => {
               />
             </View>
 
-            <View style={styles.inputGroup}>
+            <View style={[styles.inputGroup, { marginBottom: 0 }]}>
               <Text style={styles.label}>Vehicle Color</Text>
               <TextInput
                 style={styles.input}
@@ -126,7 +163,7 @@ export const VehicleInfoScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.infoCard}>
           <Ionicons name="information-circle-outline" size={20} color="#1976D2" />
           <Text style={styles.infoText}>
-            Your vehicle information helps customers identify you during pickup.
+            Your vehicle information helps customers identify you during pickup and is visible to the admin.
           </Text>
         </View>
 

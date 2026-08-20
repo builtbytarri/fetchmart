@@ -5,409 +5,410 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-const connectionString = process.env.DATABASE_URL!;
-const adapter = new PrismaPg({ connectionString });
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
 
-async function main() {
-  console.log('🌱 Seeding database...');
+// ─── Store definitions ────────────────────────────────────────────────────────
+// All within ~20 km of (6.5244, 3.3792) — the default customer query origin.
 
-  // Create admin user
+const STORES = [
+  {
+    email: 'freshgreens@fetchmart.com',
+    ownerName: 'Amaka Obi',
+    name: 'Fresh Greens Market',
+    description: 'Farm-fresh produce, fruits and vegetables delivered daily',
+    lat: 6.5139, lng: 3.3786,   // Yaba — 1.3 km
+    isOpen: true,
+    categories: [
+      {
+        name: 'Fruits',
+        products: [
+          { name: 'Banana Bunch', description: '1 bunch of ripe bananas', price: 800, stock: 60 },
+          { name: 'Watermelon', description: 'Large seedless watermelon', price: 3500, stock: 20 },
+          { name: 'Pineapple', description: 'Fresh whole pineapple', price: 1200, stock: 35 },
+          { name: 'Pawpaw', description: 'Ripe Nigerian pawpaw', price: 1500, stock: 25 },
+          { name: 'Mango (12 pack)', description: 'Julie mango, sweet and ripe', price: 2000, stock: 40 },
+        ],
+      },
+      {
+        name: 'Vegetables',
+        products: [
+          { name: 'Tomatoes (1kg)', description: 'Fresh plum tomatoes', price: 1200, stock: 80 },
+          { name: 'Ugu Leaves (bundle)', description: 'Fresh fluted pumpkin leaves', price: 500, stock: 50 },
+          { name: 'Scotch Bonnet Peppers', description: 'Fresh hot peppers, 500g', price: 800, stock: 60 },
+          { name: 'Onions (1kg)', description: 'Red onions, firm and fresh', price: 900, stock: 70 },
+          { name: 'Cucumber (3 pack)', description: 'Farm-fresh cucumbers', price: 600, stock: 45 },
+        ],
+      },
+      {
+        name: 'Grains',
+        products: [
+          { name: 'Ofada Rice (1kg)', description: 'Local Nigerian parboiled rice', price: 1800, stock: 100 },
+          { name: 'Yellow Garri (1kg)', description: 'Medium-coarse yellow garri', price: 700, stock: 120 },
+          { name: 'Semovita (1kg)', description: 'Golden penny semolina', price: 1500, stock: 80 },
+          { name: 'Beans (1kg)', description: 'Honey beans, cleaned and sorted', price: 2000, stock: 65 },
+        ],
+      },
+    ],
+  },
+  {
+    email: 'citymart@fetchmart.com',
+    ownerName: 'Chidi Nwosu',
+    name: 'City Mart',
+    description: 'Your everyday supermarket — groceries, household and more',
+    lat: 6.5008, lng: 3.3586,   // Surulere — 2.7 km
+    isOpen: true,
+    categories: [
+      {
+        name: 'Beverages',
+        products: [
+          { name: 'Peak Milk (400g)', description: 'Full cream powdered milk', price: 2800, stock: 90 },
+          { name: 'Milo (400g)', description: 'Chocolate malt drink, 400g tin', price: 3200, stock: 75 },
+          { name: 'Nescafé (100g)', description: 'Classic instant coffee', price: 2500, stock: 60 },
+          { name: 'Lipton Tea (50 bags)', description: 'Yellow label tea bags', price: 1200, stock: 100 },
+          { name: 'Bournvita (500g)', description: 'Cocoa drink mix, 500g', price: 3500, stock: 50 },
+        ],
+      },
+      {
+        name: 'Cooking Essentials',
+        products: [
+          { name: 'Groundnut Oil (2L)', description: 'Pure groundnut cooking oil', price: 4500, stock: 45 },
+          { name: 'Knorr Cubes (50 pack)', description: 'Seasoning cubes, value pack', price: 800, stock: 150 },
+          { name: 'Tomato Paste (400g)', description: 'Tin tomato, double concentrate', price: 1200, stock: 80 },
+          { name: 'Salt (500g)', description: 'Iodized table salt', price: 400, stock: 200 },
+          { name: 'Curry Powder (100g)', description: 'Tropical Sun curry blend', price: 600, stock: 90 },
+        ],
+      },
+      {
+        name: 'Snacks',
+        products: [
+          { name: 'Digestive Biscuits', description: 'McVities digestive 400g', price: 1800, stock: 60 },
+          { name: 'Gala Sausage Roll (5 pack)', description: 'UAC meat pie snack', price: 2500, stock: 40 },
+          { name: 'Pringles (Original)', description: 'Potato crisps, 165g can', price: 3000, stock: 30 },
+        ],
+      },
+    ],
+  },
+  {
+    email: 'quickessentials@fetchmart.com',
+    ownerName: 'Tunde Bakare',
+    name: 'Quick Essentials',
+    description: 'Fast delivery on everyday must-haves',
+    lat: 6.5300, lng: 3.3580,   // Mushin — 2.9 km
+    isOpen: true,
+    categories: [
+      {
+        name: 'Personal Care',
+        products: [
+          { name: 'Dove Body Wash (400ml)', description: 'Moisturising shower gel', price: 3500, stock: 50 },
+          { name: 'Dettol Soap (4 pack)', description: 'Antibacterial soap bars', price: 2200, stock: 80 },
+          { name: 'Oral-B Toothbrush', description: 'Soft medium toothbrush', price: 1500, stock: 60 },
+          { name: 'Close-Up Toothpaste', description: 'Red gel toothpaste 100ml', price: 1200, stock: 70 },
+          { name: 'Shield Roll-On (150ml)', description: 'Deodorant anti-perspirant', price: 2800, stock: 40 },
+        ],
+      },
+      {
+        name: 'Household Cleaning',
+        products: [
+          { name: 'Omo Detergent (2kg)', description: 'Washing powder, auto formula', price: 3800, stock: 55 },
+          { name: 'Jik Bleach (750ml)', description: 'Multipurpose liquid bleach', price: 1500, stock: 45 },
+          { name: 'Vim Scouring Powder', description: 'Surface cleaner 500g', price: 900, stock: 60 },
+          { name: 'Morning Fresh (500ml)', description: 'Dishwashing liquid', price: 1800, stock: 50 },
+        ],
+      },
+      {
+        name: 'Baby & Kids',
+        products: [
+          { name: 'Pampers (M, 40 count)', description: 'Baby dry diapers size M', price: 7500, stock: 30 },
+          { name: 'Cerelac (400g)', description: 'Nestlé wheat baby cereal', price: 4500, stock: 25 },
+          { name: 'Johnson Baby Lotion', description: 'Gentle moisturising lotion 500ml', price: 3200, stock: 35 },
+        ],
+      },
+    ],
+  },
+  {
+    email: 'homeharbour@fetchmart.com',
+    ownerName: 'Ngozi Eze',
+    name: 'Home Harbour',
+    description: 'Everything your home needs, one stop shop',
+    lat: 6.6018, lng: 3.3515,   // Ikeja — 8.6 km
+    isOpen: true,
+    categories: [
+      {
+        name: 'Kitchen',
+        products: [
+          { name: 'Non-stick Frying Pan (28cm)', description: 'Granite-coated pan with lid', price: 12000, stock: 20 },
+          { name: 'Stainless Pot Set (3pc)', description: 'Medium cooking pots with lids', price: 18000, stock: 15 },
+          { name: 'Wooden Stirring Spoon Set', description: '3-piece wooden kitchen spoons', price: 2500, stock: 40 },
+          { name: 'Cutting Board (Large)', description: 'Bamboo chopping board', price: 4500, stock: 25 },
+        ],
+      },
+      {
+        name: 'Cleaning',
+        products: [
+          { name: 'Mop & Bucket Set', description: 'Spin mop with wringer bucket', price: 15000, stock: 18 },
+          { name: 'Broom & Dustpan Set', description: 'Long-handled broom combo', price: 5500, stock: 30 },
+          { name: 'Microfibre Cloths (10 pack)', description: 'Multi-surface cleaning cloths', price: 3000, stock: 45 },
+        ],
+      },
+      {
+        name: 'Storage',
+        products: [
+          { name: 'Tupperware Set (5pc)', description: 'Airtight food storage containers', price: 8500, stock: 22 },
+          { name: 'Laundry Basket (Large)', description: 'Woven plastic hamper with lid', price: 6000, stock: 20 },
+          { name: 'Shoe Rack (5-tier)', description: 'Metal shoe organiser', price: 11000, stock: 12 },
+        ],
+      },
+    ],
+  },
+  {
+    email: 'spiceroute@fetchmart.com',
+    ownerName: 'Funmi Adeyemi',
+    name: 'Spice Route',
+    description: 'Authentic Nigerian and West African spices, herbs and seasonings',
+    lat: 6.4550, lng: 3.3841,   // Lagos Island — 7.6 km
+    isOpen: true,
+    categories: [
+      {
+        name: 'Nigerian Spices',
+        products: [
+          { name: 'Ehuru (Calabash Nutmeg)', description: 'Dried ehuru seeds, 100g', price: 1500, stock: 60 },
+          { name: 'Ogiri (Fermented Locust Bean)', description: 'Traditional seasoning, 100g', price: 800, stock: 50 },
+          { name: 'Crayfish (Ground, 200g)', description: 'Premium dried crayfish powder', price: 2500, stock: 70 },
+          { name: 'Uziza Seeds (100g)', description: 'Hot peppery seeds for soups', price: 1200, stock: 45 },
+          { name: 'Uda (Negro Pepper)', description: 'Cloves-like spice, 100g', price: 1000, stock: 55 },
+        ],
+      },
+      {
+        name: 'Dried Herbs',
+        products: [
+          { name: 'Dried Scent Leaf (50g)', description: 'Efirin — aromatic herb for jollof', price: 600, stock: 80 },
+          { name: 'Dried Thyme (100g)', description: 'Garden thyme, ground and sieved', price: 700, stock: 90 },
+          { name: 'Bay Leaves (50g)', description: 'Dried laurel leaves', price: 500, stock: 70 },
+        ],
+      },
+      {
+        name: 'Seasoning Blends',
+        products: [
+          { name: 'Suya Spice Mix (200g)', description: 'Authentic suya pepper blend', price: 1800, stock: 65 },
+          { name: 'Jollof Rice Blend (150g)', description: 'Pre-mixed jollof seasoning', price: 1500, stock: 80 },
+          { name: 'Pepper Soup Mix (100g)', description: 'Native pepper soup spice blend', price: 1200, stock: 55 },
+        ],
+      },
+    ],
+  },
+  {
+    email: 'lagosbutchery@fetchmart.com',
+    ownerName: 'Emeka Okafor',
+    name: 'Lagos Butchery',
+    description: 'Fresh halal meat, poultry and seafood — cut to order',
+    lat: 6.4312, lng: 3.4120,   // Victoria Island — 10.2 km
+    isOpen: false,
+    categories: [
+      {
+        name: 'Chicken',
+        products: [
+          { name: 'Full Chicken (1.5kg)', description: 'Fresh whole broiler chicken', price: 5500, stock: 30 },
+          { name: 'Chicken Breast (1kg)', description: 'Boneless skinless breast fillet', price: 4800, stock: 25 },
+          { name: 'Chicken Wings (1kg)', description: 'Marinated party wings', price: 3500, stock: 35 },
+          { name: 'Gizzard (500g)', description: 'Cleaned fresh chicken gizzards', price: 2500, stock: 40 },
+        ],
+      },
+      {
+        name: 'Beef',
+        products: [
+          { name: 'Beef Chuck (1kg)', description: 'Nigerian cut, bone-in stewing beef', price: 7000, stock: 20 },
+          { name: 'Beef Liver (500g)', description: 'Fresh beef liver, cleaned', price: 3500, stock: 15 },
+          { name: 'Minced Beef (500g)', description: 'Lean ground beef, freshly minced', price: 4000, stock: 18 },
+        ],
+      },
+      {
+        name: 'Fish & Seafood',
+        products: [
+          { name: 'Titus Fish (2 pieces)', description: 'Fresh mackerel, gutted and cleaned', price: 3200, stock: 25 },
+          { name: 'Tilapia (1kg)', description: 'Fresh whole tilapia, scaled', price: 4500, stock: 20 },
+          { name: 'Jumbo Prawns (500g)', description: 'Fresh shelled prawns', price: 8500, stock: 15 },
+          { name: 'Smoked Catfish', description: 'Smoke-dried catfish, medium', price: 3500, stock: 30 },
+        ],
+      },
+    ],
+  },
+];
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
+async function main() {
+  console.log('Seeding database...\n');
+
+  const passwordHash = await bcrypt.hash('password123', 10);
+
+  // ── Platform settings singleton (pricing / commission defaults) ──────────
+  const existingSettings = await prisma.platformSettings.findFirst();
+  if (!existingSettings) {
+    await prisma.platformSettings.create({ data: {} });
+    console.log('Platform settings: created with defaults');
+  } else {
+    console.log('Platform settings: already present');
+  }
+
+  // ── Accounts: admin, customer, rider ──────────────────────────────────────
   const admin = await prisma.user.upsert({
     where: { email: 'admin@fetchmart.com' },
     update: {},
     create: {
       email: 'admin@fetchmart.com',
       passwordHash: await bcrypt.hash('admin123', 10),
-      name: 'Admin',
-      phone: '+2348000000000',
+      name: 'Admin User',
+      phone: '+2348000000001',
       role: UserRole.ADMIN,
     },
   });
+  console.log('Admin:', admin.email);
 
-  console.log('✅ Created admin user:', admin.email);
-
-  // Create store owner users
-  const storeOwners = await Promise.all([
-    prisma.user.upsert({
-      where: { email: 'freshmart@example.com' },
-      update: {},
-      create: {
-        email: 'freshmart@example.com',
-        passwordHash: await bcrypt.hash('password123', 10),
-        name: 'Fresh Mart',
-        phone: '+2348012345001',
-        role: UserRole.STORE,
-      },
-    }),
-    prisma.user.upsert({
-      where: { email: 'groceryplus@example.com' },
-      update: {},
-      create: {
-        email: 'groceryplus@example.com',
-        passwordHash: await bcrypt.hash('password123', 10),
-        name: 'Grocery Plus',
-        phone: '+2348012345002',
-        role: UserRole.STORE,
-      },
-    }),
-    prisma.user.upsert({
-      where: { email: 'quickshop@example.com' },
-      update: {},
-      create: {
-        email: 'quickshop@example.com',
-        passwordHash: await bcrypt.hash('password123', 10),
-        name: 'Quick Shop',
-        phone: '+2348012345003',
-        role: UserRole.STORE,
-      },
-    }),
-    prisma.user.upsert({
-      where: { email: 'supervalue@example.com' },
-      update: {},
-      create: {
-        email: 'supervalue@example.com',
-        passwordHash: await bcrypt.hash('password123', 10),
-        name: 'Super Value',
-        phone: '+2348012345004',
-        role: UserRole.STORE,
-      },
-    }),
-  ]);
-
-  console.log(`✅ Created ${storeOwners.length} store owner users`);
-
-  // Create stores (all in Lekki area for realistic routing)
-  const stores = await Promise.all([
-    prisma.store.upsert({
-      where: { ownerUserId: storeOwners[0].id },
-      update: { 
-        isOpen: true,
-        latitude: 6.4498,
-        longitude: 3.4723,
-      },
-      create: {
-        ownerUserId: storeOwners[0].id,
-        name: 'Fresh Mart',
-        description: 'Your one-stop shop for fresh produce and groceries',
-        latitude: 6.4498,  // Lekki Phase 1
-        longitude: 3.4723,
-        isOpen: true,
-      },
-    }),
-    prisma.store.upsert({
-      where: { ownerUserId: storeOwners[1].id },
-      update: { 
-        isOpen: true,
-        latitude: 6.4312,
-        longitude: 3.4456,
-      },
-      create: {
-        ownerUserId: storeOwners[1].id,
-        name: 'Grocery Plus',
-        description: 'Quality groceries at affordable prices',
-        latitude: 6.4312,  // Victoria Island
-        longitude: 3.4456,
-        isOpen: true,
-      },
-    }),
-    prisma.store.upsert({
-      where: { ownerUserId: storeOwners[2].id },
-      update: { 
-        isOpen: true,
-        latitude: 6.4401,
-        longitude: 3.4589,
-      },
-      create: {
-        ownerUserId: storeOwners[2].id,
-        name: 'Quick Shop',
-        description: 'Fast delivery, great selection',
-        latitude: 6.4401,  // Oniru, Lekki
-        longitude: 3.4589,
-        isOpen: true,
-      },
-    }),
-    prisma.store.upsert({
-      where: { ownerUserId: storeOwners[3].id },
-      update: { isOpen: false },
-      create: {
-        ownerUserId: storeOwners[3].id,
-        name: 'Super Value',
-        description: 'Best value for your money',
-        latitude: 6.5300,
-        longitude: 3.3700,
-        isOpen: false,
-      },
-    }),
-  ]);
-
-  console.log(`✅ Created ${stores.length} stores`);
-
-  // Sample products for each store (without category - can be assigned later via UI)
-  const productData = [
-    // Fresh Mart products
-    { storeId: stores[0].id, name: 'Fresh Tomato', description: 'Locally grown fresh tomatoes', price: 2300, stockQuantity: 50 },
-    { storeId: stores[0].id, name: 'Wine', description: 'Premium red wine', price: 2300, stockQuantity: 20 },
-    { storeId: stores[0].id, name: 'Bag of Rice', description: '50kg bag of premium rice', price: 5000, stockQuantity: 30 },
-    { storeId: stores[0].id, name: 'Nescafe', description: 'Instant coffee 200g', price: 2300, stockQuantity: 40 },
-    { storeId: stores[0].id, name: 'Cleaning Set', description: 'Complete home cleaning set', price: 3500, stockQuantity: 15 },
-    { storeId: stores[0].id, name: 'Adjustable Iron Mops', description: 'Heavy duty iron mops', price: 3500, stockQuantity: 25 },
-    
-    // Grocery Plus products
-    { storeId: stores[1].id, name: 'Pack of HB Pencils', description: '12 pieces HB pencils', price: 2000, stockQuantity: 100 },
-    { storeId: stores[1].id, name: 'Diary', description: '2024 Executive diary', price: 6000, stockQuantity: 50 },
-    { storeId: stores[1].id, name: 'Marker Set', description: 'Colored markers 12 pack', price: 1000, stockQuantity: 60 },
-    { storeId: stores[1].id, name: 'Cooking Oil', description: '5L vegetable oil', price: 4500, stockQuantity: 35 },
-    { storeId: stores[1].id, name: 'Sugar', description: '1kg refined sugar', price: 1200, stockQuantity: 80 },
-    
-    // Quick Shop products
-    { storeId: stores[2].id, name: 'Soap Bar', description: 'Antibacterial soap 6 pack', price: 1500, stockQuantity: 70 },
-    { storeId: stores[2].id, name: 'Detergent', description: '2kg washing powder', price: 2800, stockQuantity: 45 },
-    { storeId: stores[2].id, name: 'Fresh Eggs', description: 'Crate of 30 eggs', price: 3200, stockQuantity: 25 },
-    { storeId: stores[2].id, name: 'Bread', description: 'Fresh baked bread loaf', price: 800, stockQuantity: 40 },
-    
-    // Super Value products
-    { storeId: stores[3].id, name: 'Milk', description: '1L fresh milk', price: 1800, stockQuantity: 30 },
-    { storeId: stores[3].id, name: 'Butter', description: '500g butter pack', price: 2500, stockQuantity: 20 },
-    { storeId: stores[3].id, name: 'Cheese', description: 'Cheddar cheese 250g', price: 3000, stockQuantity: 15 },
-  ];
-
-  for (const product of productData) {
-    await prisma.product.upsert({
-      where: {
-        id: `${product.storeId}-${product.name.toLowerCase().replace(/\s+/g, '-')}`,
-      },
-      update: {},
-      create: {
-        ...product,
-        isAvailable: true,
-      },
-    });
-  }
-
-  console.log(`✅ Created ${productData.length} products`);
-
-  // Create a customer user with address and location (Chevron, Lekki)
   const customer = await prisma.user.upsert({
-    where: { email: 'customer@example.com' },
-    update: {
-      address: '15 Chevron Drive, Lekki, Lagos',
-      latitude: 6.4355,
-      longitude: 3.5155,
-    },
+    where: { email: 'customer@fetchmart.com' },
+    update: { address: '14 Akin Adesola Street, Victoria Island, Lagos', latitude: 6.4281, longitude: 3.4219 },
     create: {
-      email: 'customer@example.com',
-      passwordHash: await bcrypt.hash('password123', 10),
-      name: 'John Customer',
-      phone: '+2348012345100',
+      email: 'customer@fetchmart.com',
+      passwordHash,
+      name: 'Temi Adeoye',
+      phone: '+2348011111111',
       role: UserRole.CUSTOMER,
-      address: '15 Chevron Drive, Lekki, Lagos',
-      latitude: 6.4355,
-      longitude: 3.5155,
+      address: '14 Akin Adesola Street, Victoria Island, Lagos',
+      latitude: 6.4281,
+      longitude: 3.4219,
     },
   });
+  console.log('Customer:', customer.email);
 
-  console.log('✅ Created customer user');
-
-  // Create a rider user
   const riderUser = await prisma.user.upsert({
-    where: { email: 'rider@example.com' },
+    where: { email: 'rider@fetchmart.com' },
     update: {},
     create: {
-      email: 'rider@example.com',
-      passwordHash: await bcrypt.hash('password123', 10),
-      name: 'Mike Rider',
-      phone: '+2348012345200',
+      email: 'rider@fetchmart.com',
+      passwordHash,
+      name: 'Seun Ogundimu',
+      phone: '+2348022222222',
       role: UserRole.RIDER,
     },
   });
-
-  // Create rider profile (Eko Hotel, Victoria Island - near Lekki)
-  const rider = await prisma.rider.upsert({
+  await prisma.rider.upsert({
     where: { userId: riderUser.id },
-    update: {
-      isAvailable: true,
-      currentLatitude: 6.4281,
-      currentLongitude: 3.4219,
-    },
-    create: {
-      userId: riderUser.id,
-      isAvailable: true,
-      currentLatitude: 6.4281,
-      currentLongitude: 3.4219,
-      lastPingAt: new Date(),
-    },
+    update: { isAvailable: true, currentLatitude: 6.4310, currentLongitude: 3.4270, lastPingAt: new Date() },
+    create: { userId: riderUser.id, isAvailable: true, currentLatitude: 6.4310, currentLongitude: 3.4270, lastPingAt: new Date() },
   });
+  console.log('Rider:', riderUser.email);
 
-  console.log('✅ Created rider user and profile');
+  // ── Stores, categories and products ──────────────────────────────────────
+  let totalProducts = 0;
 
-  // Update store with address
-  await prisma.user.update({
-    where: { id: storeOwners[0].id },
-    data: {
-      address: '25 Allen Avenue, Ikeja, Lagos',
-    },
-  });
-
-  // Get a product from the first store for orders
-  const product = await prisma.product.findFirst({
-    where: { storeId: stores[0].id },
-  });
-
-  if (product) {
-    // Create 1 active order (ASSIGNED status - rider needs to pick up)
-    const activeOrder = await prisma.order.upsert({
-      where: { id: 'seed-active-order-1' },
-      update: {
-        status: OrderStatus.ASSIGNED,
-        riderId: rider.id,
-        assignedAt: new Date(),
-      },
-      create: {
-        id: 'seed-active-order-1',
-        customerUserId: customer.id,
-        storeId: stores[0].id,
-        riderId: rider.id,
-        status: OrderStatus.ASSIGNED,
-        totalAmount: 4600,
-        assignedAt: new Date(),
-      },
-    });
-
-    // Create order items for active order
-    await prisma.orderItem.upsert({
-      where: { id: 'seed-active-order-1-item-1' },
+  for (const storeDef of STORES) {
+    // Owner user
+    const owner = await prisma.user.upsert({
+      where: { email: storeDef.email },
       update: {},
       create: {
-        id: 'seed-active-order-1-item-1',
-        orderId: activeOrder.id,
-        productId: product.id,
-        productName: product.name,
-        unitPrice: product.price,
-        quantity: 2,
+        email: storeDef.email,
+        passwordHash,
+        name: storeDef.ownerName,
+        phone: `+234801${Math.floor(Math.random() * 9000000 + 1000000)}`,
+        role: UserRole.STORE,
+        address: storeDef.name + ' HQ, Lagos',
+        latitude: storeDef.lat,
+        longitude: storeDef.lng,
       },
     });
 
-    console.log('✅ Created 1 active delivery');
+    // Store
+    const store = await prisma.store.upsert({
+      where: { ownerUserId: owner.id },
+      update: { name: storeDef.name, description: storeDef.description, isOpen: storeDef.isOpen, latitude: storeDef.lat, longitude: storeDef.lng },
+      create: {
+        ownerUserId: owner.id,
+        name: storeDef.name,
+        description: storeDef.description,
+        latitude: storeDef.lat,
+        longitude: storeDef.lng,
+        isOpen: storeDef.isOpen,
+      },
+    });
 
-    // Create 5 available orders for riders to pick up (READY status)
-    const availableOrdersData = [
-      { id: 'seed-available-order-1', storeIndex: 0, amount: 3500, productQty: 2 },
-      { id: 'seed-available-order-2', storeIndex: 1, amount: 4200, productQty: 3 },
-      { id: 'seed-available-order-3', storeIndex: 0, amount: 2800, productQty: 1 },
-      { id: 'seed-available-order-4', storeIndex: 2, amount: 5600, productQty: 4 },
-      { id: 'seed-available-order-5', storeIndex: 1, amount: 3100, productQty: 2 },
+    // Categories and products
+    for (const catDef of storeDef.categories) {
+      const existingCat = await prisma.category.findFirst({ where: { storeId: store.id, name: catDef.name } });
+      const category = existingCat ?? await prisma.category.create({ data: { storeId: store.id, name: catDef.name } });
+
+      for (const p of catDef.products) {
+        const exists = await prisma.product.findFirst({ where: { storeId: store.id, name: p.name } });
+        if (!exists) {
+          await prisma.product.create({
+            data: {
+              storeId: store.id,
+              categoryId: category.id,
+              name: p.name,
+              description: p.description,
+              price: p.price,
+              stockQuantity: p.stock,
+              isAvailable: true,
+            },
+          });
+          totalProducts++;
+        }
+      }
+    }
+
+    console.log(`Store seeded: ${storeDef.name} (${storeDef.categories.length} categories)`);
+  }
+
+  console.log(`\nTotal products created: ${totalProducts}`);
+
+  // ── Sample orders ─────────────────────────────────────────────────────────
+  const firstStore = await prisma.store.findFirst({ where: { name: 'Fresh Greens Market' } });
+  const sampleProduct = firstStore ? await prisma.product.findFirst({ where: { storeId: firstStore.id } }) : null;
+  const rider = await prisma.rider.findFirst({ where: { userId: riderUser.id } });
+
+  if (firstStore && sampleProduct && rider) {
+    const orderStatuses = [
+      { id: 'seed-order-completed-1', status: OrderStatus.COMPLETED, riderId: rider.id, amount: 4600 },
+      { id: 'seed-order-completed-2', status: OrderStatus.COMPLETED, riderId: rider.id, amount: 7200 },
+      { id: 'seed-order-ready-1',     status: OrderStatus.READY,     riderId: null,     amount: 3500 },
     ];
 
-    for (const orderData of availableOrdersData) {
-      const storeForOrder = stores[orderData.storeIndex];
-      const productForOrder = await prisma.product.findFirst({
-        where: { storeId: storeForOrder.id },
+    for (const o of orderStatuses) {
+      const order = await prisma.order.upsert({
+        where: { id: o.id },
+        update: { status: o.status },
+        create: {
+          id: o.id,
+          customerUserId: customer.id,
+          storeId: firstStore.id,
+          riderId: o.riderId,
+          status: o.status,
+          totalAmount: o.amount,
+          assignedAt: o.riderId ? new Date(Date.now() - 86400000) : null,
+        },
       });
 
-      if (productForOrder) {
-        const availableOrder = await prisma.order.upsert({
-          where: { id: orderData.id },
-          update: { status: OrderStatus.READY },
-          create: {
-            id: orderData.id,
-            customerUserId: customer.id,
-            storeId: storeForOrder.id,
-            riderId: null, // No rider assigned yet - available for pickup
-            status: OrderStatus.READY,
-            totalAmount: orderData.amount,
-          },
-        });
-
-        await prisma.orderItem.upsert({
-          where: { id: `${orderData.id}-item-1` },
-          update: {},
-          create: {
-            id: `${orderData.id}-item-1`,
-            orderId: availableOrder.id,
-            productId: productForOrder.id,
-            productName: productForOrder.name,
-            unitPrice: productForOrder.price,
-            quantity: orderData.productQty,
+      const itemId = `${o.id}-item-1`;
+      const itemExists = await prisma.orderItem.findUnique({ where: { id: itemId } });
+      if (!itemExists) {
+        await prisma.orderItem.create({
+          data: {
+            id: itemId,
+            orderId: order.id,
+            productId: sampleProduct.id,
+            productName: sampleProduct.name,
+            unitPrice: sampleProduct.price,
+            quantity: 2,
           },
         });
       }
     }
-
-    console.log('✅ Created 5 available orders for rider pickup');
-
-    // Create 2 completed orders
-    const completedOrder1 = await prisma.order.upsert({
-      where: { id: 'seed-completed-order-1' },
-      update: { status: OrderStatus.COMPLETED },
-      create: {
-        id: 'seed-completed-order-1',
-        customerUserId: customer.id,
-        storeId: stores[0].id,
-        riderId: rider.id,
-        status: OrderStatus.COMPLETED,
-        totalAmount: 5000,
-        assignedAt: new Date(Date.now() - 86400000), // 1 day ago
-      },
-    });
-
-    await prisma.orderItem.upsert({
-      where: { id: 'seed-completed-order-1-item-1' },
-      update: {},
-      create: {
-        id: 'seed-completed-order-1-item-1',
-        orderId: completedOrder1.id,
-        productId: product.id,
-        productName: product.name,
-        unitPrice: product.price,
-        quantity: 2,
-      },
-    });
-
-    const completedOrder2 = await prisma.order.upsert({
-      where: { id: 'seed-completed-order-2' },
-      update: { status: OrderStatus.COMPLETED },
-      create: {
-        id: 'seed-completed-order-2',
-        customerUserId: customer.id,
-        storeId: stores[1].id,
-        riderId: rider.id,
-        status: OrderStatus.COMPLETED,
-        totalAmount: 8000,
-        assignedAt: new Date(Date.now() - 172800000), // 2 days ago
-      },
-    });
-
-    const product2 = await prisma.product.findFirst({
-      where: { storeId: stores[1].id },
-    });
-
-    if (product2) {
-      await prisma.orderItem.upsert({
-        where: { id: 'seed-completed-order-2-item-1' },
-        update: {},
-        create: {
-          id: 'seed-completed-order-2-item-1',
-          orderId: completedOrder2.id,
-          productId: product2.id,
-          productName: product2.name,
-          unitPrice: product2.price,
-          quantity: 4,
-        },
-      });
-    }
-
-    console.log('✅ Created 2 completed deliveries');
+    console.log('\nSample orders created');
   }
 
-  console.log('🎉 Seeding completed!');
+  console.log('\nSeeding complete.');
 }
 
 main()
-  .catch((e) => {
-    console.error('❌ Seeding failed:', e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+  .catch(e => { console.error('Seeding failed:', e); process.exit(1); })
+  .finally(() => prisma.$disconnect());

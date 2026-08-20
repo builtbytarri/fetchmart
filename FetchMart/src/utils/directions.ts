@@ -1,4 +1,5 @@
 import { MAPBOX_ACCESS_TOKEN } from '../constants/config';
+import { fetchJson } from './http';
 
 interface LatLng {
   latitude: number;
@@ -36,8 +37,7 @@ export async function getDirections(
       `&overview=full` +
       `&steps=false`;
 
-    const response = await fetch(url);
-    const data = await response.json();
+    const data = await fetchJson(url);
 
     if (!data.routes || data.routes.length === 0) {
       console.warn('Mapbox Directions: no routes returned', data.message);

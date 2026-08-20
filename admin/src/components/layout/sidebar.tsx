@@ -15,6 +15,8 @@ import {
   HelpCircle,
   LogOut,
   Activity,
+  Wallet,
+  Tag,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
@@ -26,6 +28,8 @@ const navigation = [
   { name: 'Stores', href: '/stores', icon: Store },
   { name: 'Riders', href: '/riders', icon: Bike },
   { name: 'Users', href: '/users', icon: Users },
+  { name: 'Finance', href: '/finance', icon: Wallet },
+  { name: 'Coupons', href: '/coupons', icon: Tag },
   { name: 'Map View', href: '/map', icon: Map },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
 ];

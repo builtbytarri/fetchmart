@@ -26,6 +26,9 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
   const { user } = useAuthStore();
   const [store, setStore] = useState<Store | null>(null);
   const [productCount, setProductCount] = useState(0);
+  const [ordersToday, setOrdersToday] = useState(0);
+  const [revenueToday, setRevenueToday] = useState(0);
+  const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isTogglingStatus, setIsTogglingStatus] = useState(false);
@@ -51,9 +54,34 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
     try {
       const stores = await storesApi.getMyStores();
       if (stores.length > 0) {
-        setStore(stores[0]);
-        const products = await storesApi.getProducts(stores[0].id);
+        const s = stores[0];
+        setStore(s);
+        const [products, orders] = await Promise.all([
+          storesApi.getProducts(s.id),
+          storesApi.getMyOrders().catch(() => [] as any[]),
+        ]);
         setProductCount(products.length);
+
+        const todayStr = new Date().toDateString();
+        // Only count orders the customer has actually paid for (exclude unpaid CREATED).
+        const PAID_STATUSES = [
+          'PAID', 'STORE_ACCEPTED', 'PREPARING', 'READY',
+          'ASSIGNED', 'PICKED_UP', 'EN_ROUTE', 'ARRIVED', 'COMPLETED',
+        ];
+        const todayOrders = orders.filter(
+          (o: any) =>
+            new Date(o.createdAt).toDateString() === todayStr &&
+            PAID_STATUSES.includes(o.status),
+        );
+        setOrdersToday(todayOrders.length);
+        // Store revenue = gross item subtotal (what the store sold), NOT the full
+        // order total — that also includes the app's service + delivery fees,
+        // which belong to the platform/rider, not the store. The store's net after
+        // the FetchMart commission is lower (shown in the wallet).
+        setRevenueToday(
+          todayOrders.reduce((sum: number, o: any) => sum + Number(o.subtotal ?? 0), 0),
+        );
+        setRecentOrders(orders.slice(0, 5));
       }
     } catch (err) {
       console.error('Failed to load store:', err);
@@ -160,12 +188,16 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
             <Ionicons name="cart-outline" size={24} color={COLORS.secondary} />
-            <Text style={styles.statValue}>0</Text>
+            <Text style={styles.statValue}>{ordersToday}</Text>
             <Text style={styles.statLabel}>Orders Today</Text>
           </View>
           <View style={styles.statCard}>
             <Ionicons name="cash-outline" size={24} color={COLORS.primary} />
-            <Text style={styles.statValue}>₦0</Text>
+            <Text style={styles.statValue}>
+              ₦{revenueToday >= 1000
+                ? `${(revenueToday / 1000).toFixed(1)}k`
+                : revenueToday}
+            </Text>
             <Text style={styles.statLabel}>Revenue</Text>
           </View>
           <View style={styles.statCard}>
@@ -219,15 +251,29 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
         {/* Recent Orders */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Recent Orders</Text>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('StoreOrders')}>
             <Text style={styles.seeAllText}>See all</Text>
           </TouchableOpacity>
         </View>
-        <View style={styles.emptyOrders}>
-          <Ionicons name="receipt-outline" size={48} color={COLORS.textSecondary} />
-          <Text style={styles.emptyText}>No orders yet</Text>
-          <Text style={styles.emptySubtext}>Orders will appear here</Text>
-        </View>
+        {recentOrders.length === 0 ? (
+          <View style={styles.emptyOrders}>
+            <Ionicons name="receipt-outline" size={48} color={COLORS.textSecondary} />
+            <Text style={styles.emptyText}>No orders yet</Text>
+            <Text style={styles.emptySubtext}>Orders will appear here</Text>
+          </View>
+        ) : (
+          recentOrders.map((order: any) => (
+            <View key={order.id} style={styles.orderRow}>
+              <View style={styles.orderRowLeft}>
+                <Text style={styles.orderRowId}>#{order.id.slice(0, 8).toUpperCase()}</Text>
+                <Text style={styles.orderRowStatus}>{order.status.replace('_', ' ')}</Text>
+              </View>
+              <Text style={styles.orderRowAmount}>
+                ₦{Number(order.totalAmount).toLocaleString('en-NG')}
+              </Text>
+            </View>
+          ))
+        )}
 
         <View style={{ height: 100 }} />
       </ScrollView>
@@ -453,4 +499,18 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: 2,
   },
+  orderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: COLORS.white,
+    marginHorizontal: SPACING.md,
+    marginBottom: 1,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+  },
+  orderRowLeft: { gap: 4 },
+  orderRowId: { fontSize: 14, fontWeight: '600', color: COLORS.text },
+  orderRowStatus: { fontSize: 12, color: COLORS.textSecondary },
+  orderRowAmount: { fontSize: 14, fontWeight: '600', color: COLORS.primary },
 });

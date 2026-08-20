@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   signInButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.primary,
     paddingVertical: SPACING.md + 2,
     borderRadius: 30,
     alignItems: 'center',
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   signUpLink: {
-    color: '#4CAF50',
+    color: COLORS.primary,
     fontSize: 14,
     fontWeight: '600',
   },

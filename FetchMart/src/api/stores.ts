@@ -1,5 +1,5 @@
 import { api } from './client';
-import { Store, Product } from '../types';
+import { Store, Product, Order, OrderStatus } from '../types';
 
 export interface CreateStoreRequest {
   name: string;
@@ -7,8 +7,7 @@ export interface CreateStoreRequest {
   latitude: number;
   longitude: number;
   address?: string;
-  phone?: string;
-  openingHours?: Record<string, string>;
+  imageUrl?: string;
 }
 
 export interface UpdateStoreRequest {
@@ -17,8 +16,7 @@ export interface UpdateStoreRequest {
   latitude?: number;
   longitude?: number;
   address?: string;
-  phone?: string;
-  logoUrl?: string;
+  imageUrl?: string;
   isOpen?: boolean;
   openingHours?: Record<string, string>;
 }
@@ -55,8 +53,54 @@ export const storesApi = {
     return response.data;
   },
 
+  getSuggestedProducts: async (storeId: string): Promise<Product[]> => {
+    const response = await api.get<Product[]>(`/stores/${storeId}/products/suggested`);
+    return response.data;
+  },
+
   getMyStores: async (): Promise<Store[]> => {
     const response = await api.get<Store[]>('/stores/my-stores');
+    return response.data;
+  },
+
+  getFeatured: async (): Promise<Store[]> => {
+    const response = await api.get<Store[]>('/stores/featured');
+    return response.data;
+  },
+
+  getFavourites: async (): Promise<Store[]> => {
+    const response = await api.get<Store[]>('/stores/favourites');
+    return response.data;
+  },
+
+  getFavouriteIds: async (): Promise<string[]> => {
+    const response = await api.get<string[]>('/stores/favourite-ids');
+    return response.data;
+  },
+
+  toggleFavourite: async (storeId: string): Promise<{ isFavourite: boolean }> => {
+    const response = await api.post<{ isFavourite: boolean }>(`/stores/${storeId}/favourite`);
+    return response.data;
+  },
+
+  // ── Store order management ────────────────────────────────────────────────
+
+  /** Fetch all orders for the logged-in store. */
+  getMyOrders: async (status?: OrderStatus): Promise<Order[]> => {
+    const params = status ? { status } : {};
+    const response = await api.get<Order[]>('/stores/my/orders', { params });
+    return response.data;
+  },
+
+  /** Accept, mark-preparing, or mark-ready for an order. */
+  updateOrderStatus: async (orderId: string, status: OrderStatus): Promise<Order> => {
+    const response = await api.patch<Order>(`/stores/my/orders/${orderId}/status`, { status });
+    return response.data;
+  },
+
+  /** Reject (cancel) an order the store cannot fulfil. */
+  rejectOrder: async (orderId: string): Promise<Order> => {
+    const response = await api.post<Order>(`/stores/my/orders/${orderId}/reject`);
     return response.data;
   },
 

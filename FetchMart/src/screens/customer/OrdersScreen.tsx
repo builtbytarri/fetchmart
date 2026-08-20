@@ -23,19 +23,32 @@ export const OrdersScreen: React.FC<Props> = ({ navigation }) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchOrders = async (showRefresh = false) => {
     if (showRefresh) setIsRefreshing(true);
     else setIsLoading(true);
+    setError(null);
 
     try {
       const data = await ordersApi.getMyOrders();
       setOrders(data);
     } catch (err) {
       console.error('Failed to load orders:', err);
+      setError('Could not load your orders. Pull down to retry.');
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
+    }
+  };
+
+  const openOrderDetails = (orderId: string) => {
+    // OrderDetails lives on the parent stack navigator
+    const parent = navigation.getParent();
+    if (parent) {
+      parent.navigate('OrderDetails', { orderId });
+    } else {
+      navigation.navigate('OrderDetails', { orderId });
     }
   };
 
@@ -65,7 +78,7 @@ export const OrdersScreen: React.FC<Props> = ({ navigation }) => {
         renderItem={({ item }) => (
           <OrderCard
             order={item}
-            onPress={() => navigation.navigate('OrderDetails', { orderId: item.id })}
+            onPress={() => openOrderDetails(item.id)}
           />
         )}
         contentContainerStyle={styles.listContent}
@@ -76,13 +89,22 @@ export const OrdersScreen: React.FC<Props> = ({ navigation }) => {
             colors={[COLORS.primary]}
           />
         }
+        ListHeaderComponent={
+          error ? (
+            <View style={styles.errorBanner}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          ) : null
+        }
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyTitle}>No orders yet</Text>
-            <Text style={styles.emptySubtitle}>
-              Your order history will appear here
-            </Text>
-          </View>
+          !error ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyTitle}>No orders yet</Text>
+              <Text style={styles.emptySubtitle}>
+                Your order history will appear here
+              </Text>
+            </View>
+          ) : null
         }
       />
     </SafeAreaView>
@@ -129,5 +151,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textSecondary,
     marginTop: SPACING.xs,
+  },
+  errorBanner: {
+    backgroundColor: '#FEF2F2',
+    borderRadius: 10,
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
+  },
+  errorText: {
+    fontSize: 14,
+    color: COLORS.error,
+    textAlign: 'center',
   },
 });

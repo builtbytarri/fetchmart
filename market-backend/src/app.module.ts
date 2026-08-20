@@ -10,6 +10,7 @@ import { HealthModule } from './health';
 import { AuthModule } from './auth';
 import { UsersModule } from './users';
 import { EmailModule } from './email';
+import { SmsModule } from './sms';
 import { StoresModule } from './stores';
 import { ProductsModule } from './products';
 import { OrdersModule } from './orders';
@@ -20,6 +21,11 @@ import { PaymentsModule } from './payments';
 import { StorageModule } from './storage';
 import { JobsModule } from './jobs';
 import { AdminModule } from './admin/admin.module';
+import { SettingsModule } from './settings';
+import { PricingModule } from './pricing';
+import { WalletModule } from './wallet';
+import { NotificationsModule } from './notifications';
+import { CouponsModule } from './coupons';
 
 @Module({
   imports: [
@@ -36,6 +42,7 @@ import { AdminModule } from './admin/admin.module';
     AuthModule,
     UsersModule,
     EmailModule,
+    SmsModule,
     StoresModule,
     ProductsModule,
     OrdersModule,
@@ -46,6 +53,11 @@ import { AdminModule } from './admin/admin.module';
     StorageModule,
     JobsModule,
     AdminModule,
+    SettingsModule,
+    PricingModule,
+    WalletModule,
+    NotificationsModule,
+    CouponsModule,
   ],
   controllers: [AppController],
   providers: [

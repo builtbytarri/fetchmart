@@ -1,31 +1,39 @@
-export const API_BASE_URL = __DEV__ 
-  ? 'http://localhost:3000' 
-  : 'https://api.fetchmart.com';
+export const API_BASE_URL = __DEV__
+  ? 'http://localhost:3000'
+  : (process.env.EXPO_PUBLIC_API_URL ?? 'https://api.fetchmart.com.ng');
 
 export const SOCKET_URL = __DEV__
   ? 'http://localhost:3000'
-  : 'https://api.fetchmart.com';
+  : (process.env.EXPO_PUBLIC_SOCKET_URL ?? 'https://api.fetchmart.com.ng');
 
 export const APP_NAME = 'FetchMart';
 
 export const COLORS = {
-  primary: '#4CAF50',
-  primaryDark: '#388E3C',
-  primaryLight: '#E8F5E9',
-  secondary: '#FF9800',
+  // ── Brand colours — extracted from official logo ──────────────────────────
+  // Primary: the vivid fresh green used in the leaf, wordmark and arc
+  primary:       '#38B449',
+  primaryDark:   '#2A8A37',
+  primaryLight:  '#E8F7EB',
+
+  // Accent: warm tomato-coral from the shopping bag body — use sparingly
+  accent:        '#E8572C',
+  accentDark:    '#C1421C',
+  accentLight:   '#FEF0EB',
+  // ─────────────────────────────────────────────────────────────────────────
+
+  secondary:     '#FF9800',
   secondaryDark: '#F57C00',
-  secondaryLight: '#FFF3E0',
-  accent: '#2EC4B6',
-  background: '#FFFFFF',
-  surface: '#F8F9FA',
-  text: '#212529',
+  secondaryLight:'#FFF3E0',
+  background:    '#FFFFFF',
+  surface:       '#F8F9FA',
+  text:          '#1A1A1A',
   textSecondary: '#6C757D',
-  border: '#DEE2E6',
-  error: '#DC3545',
-  success: '#28A745',
-  warning: '#FFC107',
-  white: '#FFFFFF',
-  black: '#000000',
+  border:        '#E4E7EB',
+  error:         '#DC3545',
+  success:       '#28A745',
+  warning:       '#FFC107',
+  white:         '#FFFFFF',
+  black:         '#000000',
 };
 
 export const FONTS = {

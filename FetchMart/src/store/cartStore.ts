@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { CartItem, Product } from '../types';
+import { roundQty } from '../utils/quantity';
 
 interface CartState {
   items: CartItem[];
@@ -31,7 +32,7 @@ export const useCartStore = create<CartState>((set, get) => ({
       set({
         items: items.map((item) =>
           item.product.id === product.id
-            ? { ...item, quantity: item.quantity + quantity }
+            ? { ...item, quantity: roundQty(item.quantity + quantity) }
             : item
         ),
       });
@@ -60,7 +61,7 @@ export const useCartStore = create<CartState>((set, get) => ({
     
     set({
       items: get().items.map((item) =>
-        item.product.id === productId ? { ...item, quantity } : item
+        item.product.id === productId ? { ...item, quantity: roundQty(quantity) } : item
       ),
     });
   },
@@ -75,6 +76,13 @@ export const useCartStore = create<CartState>((set, get) => ({
   },
 
   getItemCount: () => {
-    return get().items.reduce((count, item) => count + item.quantity, 0);
+    // Countable goods contribute their quantity (3 tins = 3). Measured goods
+    // contribute one per line, so half a mudu of rice reads as "1" on the cart
+    // badge rather than an odd "0.5".
+    return get().items.reduce(
+      (count, item) =>
+        count + (item.product.unit === 'PIECE' ? item.quantity : 1),
+      0,
+    );
   },
 }));

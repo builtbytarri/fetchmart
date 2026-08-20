@@ -347,7 +347,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
       <Text style={styles.orText}>OR</Text>
 
       <TouchableOpacity style={styles.locationButton} onPress={handleUseCurrentLocation}>
-        <Ionicons name="location" size={18} color="#4CAF50" />
+        <Ionicons name="location" size={18} color={COLORS.primary} />
         <Text style={styles.locationButtonText}>Use current location</Text>
       </TouchableOpacity>
     </>
@@ -446,7 +446,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   progressBarActive: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.primary,
   },
   progressBarInactive: {
     backgroundColor: COLORS.border,
@@ -504,8 +504,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   roleButtonActive: {
-    backgroundColor: '#4CAF50',
-    borderColor: '#4CAF50',
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   roleButtonText: {
     fontSize: 13,
@@ -540,7 +540,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   resendLink: {
-    color: '#4CAF50',
+    color: COLORS.primary,
     fontSize: 14,
     fontWeight: '500',
   },
@@ -557,7 +557,7 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
   },
   locationButtonText: {
-    color: '#4CAF50',
+    color: COLORS.primary,
     fontSize: 15,
     fontWeight: '500',
     marginLeft: SPACING.xs,
@@ -567,7 +567,7 @@ const styles = StyleSheet.create({
     paddingTop: SPACING.lg,
   },
   continueButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.primary,
     paddingVertical: SPACING.md + 2,
     borderRadius: 30,
     alignItems: 'center',
@@ -591,6 +591,6 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   termsLink: {
-    color: '#4CAF50',
+    color: COLORS.primary,
   },
 });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -6,10 +6,15 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
+import { walletApi } from '../../api';
+import { WalletSummary } from '../../types';
 import { COLORS, SPACING } from '../../constants/config';
 
 type Props = {
@@ -17,16 +22,78 @@ type Props = {
 };
 
 export const StoreWalletScreen: React.FC<Props> = ({ navigation }) => {
-  const [balance] = useState(0);
-  const [pendingBalance] = useState(0);
+  const [wallet, setWallet] = useState<WalletSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [withdrawing, setWithdrawing] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const data = await walletApi.getWallet();
+      setWallet(data);
+    } catch {
+      // leave null; UI shows empty state
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
+
+  const balance = Number(wallet?.balance ?? 0);
+  // Credited at payment but held until the order is delivered — shown so the
+  // store can see money is on the way without being able to withdraw it yet.
+  const pendingBalance = Number(wallet?.pendingBalance ?? 0);
 
   const handleWithdraw = () => {
-    if (balance <= 0) {
-      Alert.alert('Insufficient Balance', 'You need to have earnings before you can withdraw.');
+    if (!wallet) return;
+    if (!wallet.bankAccount) {
+      Alert.alert('Add a bank account', 'Set up your payout bank account first.', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Add account', onPress: () => navigation.navigate('BankAccount') },
+      ]);
       return;
     }
-    navigation.navigate('PaymentMethods');
+    if (balance <= 0) {
+      Alert.alert('Insufficient Balance', 'You need earnings before you can withdraw.');
+      return;
+    }
+    Alert.alert(
+      'Withdraw',
+      `Withdraw ₦${balance.toLocaleString()} to ${wallet.bankAccount.accountName}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Withdraw',
+          onPress: async () => {
+            setWithdrawing(true);
+            try {
+              await walletApi.withdraw(balance);
+              Alert.alert('Withdrawal requested', 'Your payout is on its way.');
+              await load();
+            } catch (err: any) {
+              Alert.alert('Withdrawal failed', err.response?.data?.message ?? 'Please try again.');
+            } finally {
+              setWithdrawing(false);
+            }
+          },
+        },
+      ],
+    );
   };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, styles.center]} edges={['top']}>
+        <ActivityIndicator color={COLORS.primary} />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -39,7 +106,13 @@ export const StoreWalletScreen: React.FC<Props> = ({ navigation }) => {
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />
+        }
+      >
         {/* Balance Card */}
         <View style={styles.balanceCard}>
           <View style={styles.balanceHeader}>
@@ -47,25 +120,40 @@ export const StoreWalletScreen: React.FC<Props> = ({ navigation }) => {
             <Text style={styles.balanceLabel}>Available Balance</Text>
           </View>
           <Text style={styles.balanceAmount}>₦{balance.toLocaleString()}</Text>
-          <View style={styles.pendingRow}>
-            <Ionicons name="time-outline" size={16} color="rgba(255,255,255,0.8)" />
-            <Text style={styles.pendingText}>
-              ₦{pendingBalance.toLocaleString()} pending
-            </Text>
-          </View>
+          {pendingBalance > 0 && (
+            <View style={styles.pendingRow}>
+              <Ionicons name="time-outline" size={16} color="rgba(255,255,255,0.8)" />
+              <Text style={styles.pendingText}>
+                ₦{pendingBalance.toLocaleString()} pending delivery
+              </Text>
+            </View>
+          )}
+          {wallet?.bankAccount && (
+            <View style={styles.pendingRow}>
+              <Ionicons name="business" size={16} color="rgba(255,255,255,0.8)" />
+              <Text style={styles.pendingText}>
+                {wallet.bankAccount.bankName ?? wallet.bankAccount.bankCode} ••••
+                {wallet.bankAccount.accountNumber.slice(-4)}
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Action Buttons */}
         <View style={styles.actionsRow}>
-          <TouchableOpacity style={styles.actionButton} onPress={handleWithdraw}>
+          <TouchableOpacity style={styles.actionButton} onPress={handleWithdraw} disabled={withdrawing}>
             <View style={[styles.actionIconContainer, { backgroundColor: COLORS.secondaryLight }]}>
-              <Ionicons name="arrow-up" size={24} color={COLORS.secondary} />
+              {withdrawing ? (
+                <ActivityIndicator color={COLORS.secondary} />
+              ) : (
+                <Ionicons name="arrow-up" size={24} color={COLORS.secondary} />
+              )}
             </View>
             <Text style={styles.actionButtonText}>Withdraw</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => navigation.navigate('PaymentMethods')}
+            onPress={() => navigation.navigate('BankAccount')}
           >
             <View style={[styles.actionIconContainer, { backgroundColor: COLORS.primaryLight }]}>
               <Ionicons name="card" size={24} color={COLORS.primary} />
@@ -74,27 +162,36 @@ export const StoreWalletScreen: React.FC<Props> = ({ navigation }) => {
           </TouchableOpacity>
         </View>
 
-        {/* Stats */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <Ionicons name="trending-up" size={24} color={COLORS.primary} />
-            <Text style={styles.statValue}>₦0</Text>
-            <Text style={styles.statLabel}>This Week</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Ionicons name="calendar" size={24} color={COLORS.secondary} />
-            <Text style={styles.statValue}>₦0</Text>
-            <Text style={styles.statLabel}>This Month</Text>
-          </View>
-        </View>
-
         {/* Transaction History */}
         <Text style={styles.sectionTitle}>Transaction History</Text>
-        <View style={styles.emptyContainer}>
-          <Ionicons name="receipt-outline" size={48} color={COLORS.textSecondary} />
-          <Text style={styles.emptyText}>No transactions yet</Text>
-          <Text style={styles.emptySubtext}>Your earnings will appear here</Text>
-        </View>
+        {wallet && wallet.ledger.length > 0 ? (
+          <View style={{ marginHorizontal: SPACING.md }}>
+            {wallet.ledger.map((entry) => {
+              const isCredit = entry.type === 'CREDIT';
+              return (
+                <View key={entry.id} style={styles.ledgerRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.ledgerReason}>{entry.reason}</Text>
+                    <Text style={styles.ledgerDate}>
+                      {new Date(entry.createdAt).toLocaleDateString()}
+                    </Text>
+                  </View>
+                  <Text
+                    style={[styles.ledgerAmount, { color: isCredit ? COLORS.primary : COLORS.error }]}
+                  >
+                    {isCredit ? '+' : '−'}₦{Number(entry.amount).toLocaleString()}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        ) : (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="receipt-outline" size={48} color={COLORS.textSecondary} />
+            <Text style={styles.emptyText}>No transactions yet</Text>
+            <Text style={styles.emptySubtext}>Your earnings will appear here</Text>
+          </View>
+        )}
 
         <View style={{ height: 100 }} />
       </ScrollView>
@@ -106,6 +203,32 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
+  },
+  center: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  ledgerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    padding: SPACING.md,
+    marginBottom: SPACING.sm,
+  },
+  ledgerReason: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: COLORS.text,
+  },
+  ledgerDate: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  ledgerAmount: {
+    fontSize: 16,
+    fontWeight: '700',
   },
   header: {
     flexDirection: 'row',

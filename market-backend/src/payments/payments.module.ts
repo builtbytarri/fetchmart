@@ -1,17 +1,22 @@
 import { Module } from '@nestjs/common';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
-import { KorahPayProvider } from './providers/korah-pay.provider';
+import { FlutterwaveProvider } from './providers/flutterwave.provider';
 import { PAYMENT_PROVIDER } from './payment.interface';
 import { AuthModule } from '../auth';
+import { OrdersModule } from '../orders';
+import { WalletModule } from '../wallet';
+import { NotificationsModule } from '../notifications';
+import { CouponsModule } from '../coupons';
+import { JobsModule } from '../jobs/jobs.module';
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, OrdersModule, WalletModule, NotificationsModule, CouponsModule, JobsModule],
   controllers: [PaymentsController],
   providers: [
     {
       provide: PAYMENT_PROVIDER,
-      useClass: KorahPayProvider,
+      useClass: FlutterwaveProvider,
     },
     PaymentsService,
   ],

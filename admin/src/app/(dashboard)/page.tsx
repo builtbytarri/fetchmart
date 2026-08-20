@@ -97,6 +97,19 @@ function StatCard({
   );
 }
 
+function computeTrend(chartData: { revenue: number; orders: number }[] | undefined) {
+  if (!chartData || chartData.length < 2) return { revTrend: null, ordTrend: null };
+  const today = chartData[chartData.length - 1];
+  const yesterday = chartData[chartData.length - 2];
+  const revTrend = yesterday.revenue > 0
+    ? ((today.revenue - yesterday.revenue) / yesterday.revenue) * 100
+    : null;
+  const ordTrend = yesterday.orders > 0
+    ? ((today.orders - yesterday.orders) / yesterday.orders) * 100
+    : null;
+  return { revTrend, ordTrend };
+}
+
 export default function OverviewPage() {
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['dashboard-stats'],
@@ -112,6 +125,8 @@ export default function OverviewPage() {
     queryKey: ['orders-analytics'],
     queryFn: () => adminApi.getOrdersAnalytics(7),
   });
+
+  const { revTrend, ordTrend } = computeTrend(chartData);
 
   return (
     <div className="space-y-6">
@@ -140,15 +155,15 @@ export default function OverviewPage() {
               title="Total Revenue"
               value={formatCurrency(stats?.totalRevenue || 0)}
               icon={TrendingUp}
-              trend="up"
-              trendValue="+12.5% from last week"
+              trend={revTrend !== null ? (revTrend >= 0 ? 'up' : 'down') : undefined}
+              trendValue={revTrend !== null ? `${revTrend >= 0 ? '+' : ''}${revTrend.toFixed(1)}% vs yesterday` : undefined}
             />
             <StatCard
               title="Total Orders"
               value={stats?.totalOrders || 0}
               icon={ShoppingCart}
-              trend="up"
-              trendValue="+8.2% from last week"
+              trend={ordTrend !== null ? (ordTrend >= 0 ? 'up' : 'down') : undefined}
+              trendValue={ordTrend !== null ? `${ordTrend >= 0 ? '+' : ''}${ordTrend.toFixed(1)}% vs yesterday` : undefined}
             />
             <StatCard
               title="Active Stores"

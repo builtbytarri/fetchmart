@@ -37,17 +37,57 @@ export class EnvironmentVariables {
   @IsNotEmpty()
   JWT_REFRESH_SECRET: string;
 
+  // Korah Pay — optional; kept so existing envs don't break during migration
+  @IsString()
+  @IsOptional()
+  KORAH_PUBLIC_KEY?: string;
+
+  @IsString()
+  @IsOptional()
+  KORAH_SECRET_KEY?: string;
+
+  @IsString()
+  @IsOptional()
+  KORAH_WEBHOOK_SECRET?: string;
+
+  // SMS (Termii) — optional so local development runs without credentials.
+  // Required in production: without it registration cannot complete.
+  @IsString()
+  @IsOptional()
+  SMS_PROVIDER?: string;
+
+  @IsString()
+  @IsOptional()
+  TERMII_API_KEY?: string;
+
+  @IsString()
+  @IsOptional()
+  TERMII_SENDER_ID?: string;
+
+  @IsString()
+  @IsOptional()
+  TERMII_CHANNEL?: string;
+
+  @IsString()
+  @IsOptional()
+  TERMII_BASE_URL?: string;
+
+  @IsString()
+  @IsOptional()
+  OTP_TEST_NUMBERS?: string;
+
+  // Flutterwave — required for payment processing
   @IsString()
   @IsNotEmpty()
-  KORAH_PUBLIC_KEY: string;
+  FLUTTERWAVE_SECRET_KEY: string;
 
   @IsString()
   @IsNotEmpty()
-  KORAH_SECRET_KEY: string;
+  FLUTTERWAVE_PUBLIC_KEY: string;
 
   @IsString()
   @IsNotEmpty()
-  KORAH_WEBHOOK_SECRET: string;
+  FLUTTERWAVE_WEBHOOK_HASH: string;
 
   @IsString()
   @IsNotEmpty()
@@ -57,21 +97,20 @@ export class EnvironmentVariables {
   @IsNotEmpty()
   MAP_API_KEY: string;
 
+  // Cloudinary — image uploads. Optional at boot so the rest of the API can run
+  // without them; the storage endpoint returns a clear 503 if they are missing
+  // rather than handing out an upload URL that would silently fail.
   @IsString()
-  @IsNotEmpty()
-  R2_ACCOUNT_ID: string;
+  @IsOptional()
+  CLOUDINARY_CLOUD_NAME?: string;
 
   @IsString()
-  @IsNotEmpty()
-  R2_ACCESS_KEY: string;
+  @IsOptional()
+  CLOUDINARY_API_KEY?: string;
 
   @IsString()
-  @IsNotEmpty()
-  R2_SECRET_KEY: string;
-
-  @IsString()
-  @IsNotEmpty()
-  R2_BUCKET_NAME: string;
+  @IsOptional()
+  CLOUDINARY_API_SECRET?: string;
 
   // OAuth — Google. We accept tokens from any of these audiences (one per platform).
   // At least one MUST be set or Google sign-in cannot work.

@@ -1,5 +1,5 @@
 import { api } from './client';
-import { Product } from '../types';
+import { Product, ProductUnit, StockMode } from '../types';
 
 export interface CreateProductRequest {
   name: string;
@@ -8,16 +8,27 @@ export interface CreateProductRequest {
   imageUrl?: string;
   categoryId?: string;
   stockQuantity?: number;
+  /** Unit of sale; PIECE if omitted. */
+  unit?: ProductUnit;
+  /** Smallest purchasable increment, e.g. 0.5 for half a mudu. */
+  stepSize?: number;
+  /** IN_STOCK skips exact counting. */
+  stockMode?: StockMode;
 }
 
 export interface UpdateProductRequest {
   name?: string;
   description?: string;
   price?: number;
-  imageUrl?: string;
+  /** null clears the existing image. */
+  imageUrl?: string | null;
   categoryId?: string | null;
   stockQuantity?: number;
   isAvailable?: boolean;
+  isSuggested?: boolean;
+  unit?: ProductUnit;
+  stepSize?: number;
+  stockMode?: StockMode;
 }
 
 export const productsApi = {
@@ -28,6 +39,16 @@ export const productsApi = {
 
   getById: async (productId: string): Promise<Product> => {
     const response = await api.get<Product>(`/products/${productId}`);
+    return response.data;
+  },
+
+  getSimilar: async (productId: string): Promise<Product[]> => {
+    const response = await api.get<Product[]>(`/products/${productId}/similar`);
+    return response.data;
+  },
+
+  toggleSuggested: async (productId: string): Promise<{ id: string; name: string; isSuggested: boolean }> => {
+    const response = await api.patch(`/products/${productId}/toggle-suggested`);
     return response.data;
   },
 

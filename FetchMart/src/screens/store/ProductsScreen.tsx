@@ -15,9 +15,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
-import { storesApi, Category } from '../../api';
+import { storesApi, productsApi, Category } from '../../api';
 import { Store, Product } from '../../types';
 import { COLORS, SPACING } from '../../constants/config';
+import { formatQty } from '../../utils/quantity';
 
 type FilterType = 'all' | 'in_stock' | 'out_of_stock' | 'unavailable';
 
@@ -66,10 +67,29 @@ export const ProductsScreen: React.FC<Props> = ({ navigation }) => {
     fetchData(false);
   };
 
+  const handleToggleSuggested = async (product: Product) => {
+    // Optimistic update
+    setProducts(prev =>
+      prev.map(p => p.id === product.id ? { ...p, isSuggested: !p.isSuggested } : p)
+    );
+    try {
+      await productsApi.toggleSuggested(product.id);
+    } catch (err) {
+      console.error('Toggle suggested failed:', err);
+      // Revert
+      setProducts(prev =>
+        prev.map(p => p.id === product.id ? { ...p, isSuggested: product.isSuggested } : p)
+      );
+    }
+  };
+
   const filteredProducts = products.filter((product) => {
     // Apply stock filter
-    if (activeFilter === 'in_stock' && product.stockQuantity <= 0) return false;
-    if (activeFilter === 'out_of_stock' && product.stockQuantity > 0) return false;
+    // An IN_STOCK product is always considered stocked.
+    const inStock =
+      product.stockMode === 'IN_STOCK' || Number(product.stockQuantity) > 0;
+    if (activeFilter === 'in_stock' && !inStock) return false;
+    if (activeFilter === 'out_of_stock' && inStock) return false;
     if (activeFilter === 'unavailable' && product.isAvailable) return false;
     
     // Apply category filter
@@ -80,9 +100,19 @@ export const ProductsScreen: React.FC<Props> = ({ navigation }) => {
 
   const getStockStatus = (product: Product) => {
     if (!product.isAvailable) return { text: 'Unavailable', color: COLORS.error };
-    if (product.stockQuantity <= 0) return { text: 'Out of stock', color: COLORS.secondary };
-    if (product.stockQuantity <= 5) return { text: `Low stock (${product.stockQuantity})`, color: COLORS.secondary };
-    return { text: 'In stock', color: COLORS.success };
+    // IN_STOCK products carry no count — availability is the whole story.
+    if (product.stockMode === 'IN_STOCK') {
+      return { text: 'In stock', color: COLORS.success };
+    }
+    const qty = Number(product.stockQuantity);
+    if (qty <= 0) return { text: 'Out of stock', color: COLORS.secondary };
+    if (qty <= 5) {
+      return {
+        text: `Low stock (${formatQty(qty, product.unit)})`,
+        color: COLORS.secondary,
+      };
+    }
+    return { text: `In stock (${formatQty(qty, product.unit)})`, color: COLORS.success };
   };
 
   const filters: { key: FilterType; label: string }[] = [
@@ -120,7 +150,19 @@ export const ProductsScreen: React.FC<Props> = ({ navigation }) => {
             <Text style={[styles.stockText, { color: stockStatus.color }]}>{stockStatus.text}</Text>
           </View>
         </View>
-        <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+        {/* Suggested toggle — star = pinned to "Suggested for you" on customer home */}
+        <TouchableOpacity
+          style={styles.suggestBtn}
+          onPress={() => handleToggleSuggested(item)}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons
+            name={item.isSuggested ? 'star' : 'star-outline'}
+            size={20}
+            color={item.isSuggested ? '#F5A623' : COLORS.textSecondary}
+          />
+        </TouchableOpacity>
+        <Ionicons name="chevron-forward" size={18} color={COLORS.textSecondary} style={{ marginLeft: 4 }} />
       </TouchableOpacity>
     );
   };
@@ -430,6 +472,10 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 14,
     fontWeight: '600',
+  },
+  suggestBtn: {
+    padding: 4,
+    marginLeft: 6,
   },
   headerActions: {
     flexDirection: 'row',

@@ -14,7 +14,8 @@ export type AuthStackParamList = {
 export type CustomerStackParamList = {
   CustomerTabs: undefined;
   StoreDetails: { storeId: string };
-  ProductDetails: { productId: string };
+  ProductDetails: { productId: string; storeId?: string };
+  AllProducts: { storeId: string; storeName: string };
   AllStores: { title: string };
   Cart: undefined;
   OrderDetails: { orderId: string };
@@ -36,14 +37,33 @@ export type CustomerTabParamList = {
 
 export type StoreStackParamList = {
   StoreTabs: undefined;
+  Products: undefined;
   AddProduct: undefined;
   EditProduct: { productId: string };
-  OrderDetails: { orderId: string };
+  ManageCategories: { storeId: string };
+  StoreOrders: undefined;
+  CreateStore: undefined;
+  EditProfile: undefined;
+  StoreSettings: undefined;
+  PaymentMethods: undefined;
+  Notifications: undefined;
+  HelpSupport: undefined;
+  TermsConditions: undefined;
+  StoreWallet: undefined;
+  StoreAnalytics: undefined;
+  BankAccount: undefined;
 };
 
 export type RiderStackParamList = {
   RiderTabs: undefined;
   DeliveryDetails: { orderId: string };
+  EditProfile: undefined;
+  Earnings: undefined;
+  VehicleInfo: undefined;
+  Notifications: undefined;
+  HelpSupport: undefined;
+  TermsConditions: undefined;
+  BankAccount: undefined;
 };
 
 export type RootStackParamList = {

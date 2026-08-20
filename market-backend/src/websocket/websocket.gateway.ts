@@ -77,6 +77,10 @@ export class AppWebSocketGateway implements OnGatewayConnection, OnGatewayDiscon
       client.data.role = payload.role;
 
       await client.join(`user:${payload.userId}`);
+      // Admins join a shared room so we can broadcast admin-level events.
+      if (payload.role === 'ADMIN') {
+        await client.join('role:ADMIN');
+      }
 
       if (!this.userSockets.has(payload.userId)) {
         this.userSockets.set(payload.userId, new Set());
@@ -219,10 +223,35 @@ export class AppWebSocketGateway implements OnGatewayConnection, OnGatewayDiscon
     });
   }
 
+  /**
+   * Broadcast rider position to everyone subscribed to the order room.
+   * Called by RidersService.updateLocation() whenever a rider with an
+   * active delivery pings their GPS. The customer's tracking screen
+   * listens on this event to update the live map marker.
+   */
+  emitRiderLocationToOrder(
+    orderId: string,
+    riderId: string,
+    latitude: number,
+    longitude: number,
+  ) {
+    this.emitToOrder(orderId, 'rider_location_update', {
+      riderId,
+      latitude,
+      longitude,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
   emitDeliveryCompleted(orderId: string) {
     this.emitToOrder(orderId, 'delivery_completed', {
       orderId,
       completedAt: new Date().toISOString(),
     });
+  }
+
+  /** Broadcast an event to all connected admin users. */
+  emitToAdmin(event: string, data: unknown) {
+    this.server.to('role:ADMIN').emit(event, data);
   }
 }

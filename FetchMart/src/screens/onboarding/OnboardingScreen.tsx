@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.sm,
   },
   continueButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.primary,
     paddingVertical: SPACING.md + 2,
     borderRadius: 12,
     alignItems: 'center',
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
   },
   skipButtonText: {
-    color: '#4CAF50',
+    color: COLORS.primary,
     fontSize: 15,
     fontWeight: '500',
   },

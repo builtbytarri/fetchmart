@@ -24,6 +24,15 @@ enum UserStatus {
   SUSPENDED
 }
 
+/// Moderation state for a store or rider. Deliberately separate from
+/// Store.isVerified, which tracks whether a store has *ever* been approved —
+/// conflating the two would make a banned store indistinguishable from one
+/// still awaiting its first review.
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+}
+
 enum AuthProvider {
   EMAIL
   GOOGLE
@@ -43,17 +52,45 @@ model User {
   latitude     Float?
   longitude    Float?
   status       UserStatus @default(ACTIVE)
-  createdAt    DateTime   @default(now()) @map("created_at")
-  updatedAt    DateTime   @updatedAt @map("updated_at")
+  pushToken          String?  @map("push_token")
+  // Per-user notification preferences (persisted from the mobile settings screen)
+  notifyPush         Boolean  @default(true)  @map("notify_push")
+  notifyOrderUpdates Boolean  @default(true)  @map("notify_order_updates")
+  notifyPromotions   Boolean  @default(true)  @map("notify_promotions")
+  notifyNewStores    Boolean  @default(false) @map("notify_new_stores")
+  notifyEmail        Boolean  @default(true)  @map("notify_email")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
   refreshTokens       RefreshToken[]
   passwordResetTokens PasswordResetToken[]
   oauthAccounts       OAuthAccount[]
+  favourites          Favourite[]
   store               Store?
   orders              Order[]
   rider               Rider?
+  bankAccount         BankAccount?
+  paymentTokens       PaymentToken[]
+  savedAddresses      SavedAddress[]
 
   @@map("users")
+}
+
+model SavedAddress {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  label     String
+  address   String
+  latitude  Float
+  longitude Float
+  isDefault Boolean  @default(false) @map("is_default")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("saved_addresses")
 }
 
 model OAuthAccount {
@@ -124,16 +161,55 @@ model Store {
   latitude     Float
   longitude    Float
   isOpen       Boolean  @default(false) @map("is_open")
+  // Storefront photo shown on the customer home and store detail screens.
+  imageUrl     String?  @map("image_url")
+  // Admin must approve the store before it can serve customers.
+  isVerified   Boolean  @default(false) @map("is_verified")
+  // Moderation. Soft delete only — orders and ledger entries reference stores,
+  // so a hard delete would destroy financial history.
+  status           AccountStatus @default(ACTIVE)
+  suspendedReason  String?       @map("suspended_reason")
+  suspendedAt      DateTime?     @map("suspended_at")
+  deletedAt        DateTime?     @map("deleted_at")
   openingHours Json?    @map("opening_hours")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  owner      User       @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
-  products   Product[]
-  orders     Order[]
-  categories Category[]
+  owner         User           @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  products      Product[]
+  orders        Order[]
+  categories    Category[]
+  favourites    Favourite[]
+  featuredStore FeaturedStore?
+  wallet        Wallet?
 
   @@map("stores")
+}
+
+model Favourite {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  storeId   String   @map("store_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, storeId])
+  @@index([userId])
+  @@map("favourites")
+}
+
+model FeaturedStore {
+  id        String   @id @default(uuid())
+  storeId   String   @unique @map("store_id")
+  label     String?  // optional admin note shown on card e.g. "Staff pick"
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@map("featured_stores")
 }
 
 model Category {
@@ -149,16 +225,47 @@ model Category {
   @@map("categories")
 }
 
+/// How a product is measured. PIECE is the default and behaves exactly as
+/// before; the rest are sold by measure and support fractional quantities
+/// (half a mudu of rice, 2.5 kg of beans).
+enum ProductUnit {
+  PIECE
+  KG
+  MUDU
+  BAG
+  LITRE
+  PACK
+}
+
+/// How stock is tracked.
+///   COUNTED  — exact stockQuantity, decremented per order.
+///   IN_STOCK — the store just declares "we have it". For goods bought in bulk
+///              and sold singly (sachets, sweets) counting is impractical, so
+///              availability is driven by isAvailable alone.
+enum StockMode {
+  COUNTED
+  IN_STOCK
+}
+
 model Product {
   id            String    @id @default(uuid())
   storeId       String    @map("store_id")
   name          String
   description   String?
   price         Decimal   @db.Decimal(10, 2)
-  stockQuantity Int       @default(0) @map("stock_quantity")
+  stockQuantity Decimal   @default(0) @map("stock_quantity") @db.Decimal(10, 3)
+  // Unit of sale, and the smallest increment a customer may buy. A mudu sold
+  // in halves has unit = MUDU and stepSize = 0.5.
+  unit          ProductUnit @default(PIECE)
+  stepSize      Decimal     @default(1) @map("step_size") @db.Decimal(6, 3)
+  stockMode     StockMode   @default(COUNTED) @map("stock_mode")
   categoryId    String?   @map("category_id")
   imageUrl      String?   @map("image_url")
   isAvailable   Boolean   @default(true) @map("is_available")
+  isSuggested   Boolean   @default(false) @map("is_suggested")
+  // Heavy/bulky items attract a fixed surcharge (bulkyItemFee in PlatformSettings).
+  // Stores flag these manually since reliable per-item weight is not captured.
+  isBulky       Boolean   @default(false) @map("is_bulky")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
@@ -189,18 +296,94 @@ model Order {
   storeId          String      @map("store_id")
   riderId          String?     @map("rider_id")
   status           OrderStatus @default(CREATED)
+  // totalAmount = subtotal + serviceFee + deliveryFee (what the customer is charged)
   totalAmount      Decimal     @db.Decimal(10, 2) @map("total_amount")
+
+  // ── Money breakdown (computed at checkout from PlatformSettings) ──────────
+  subtotal         Decimal?    @db.Decimal(10, 2)                       // sum of item prices
+  serviceFee       Decimal?    @db.Decimal(10, 2) @map("service_fee")   // platform service fee charged to customer
+  deliveryFee      Decimal?    @db.Decimal(10, 2) @map("delivery_fee")  // total delivery fee charged to customer
+  commissionAmount Decimal?    @db.Decimal(10, 2) @map("commission_amount") // platform commission taken from store
+  storePayout      Decimal?    @db.Decimal(10, 2) @map("store_payout")  // subtotal - commission → store pool
+  riderPayout      Decimal?    @db.Decimal(10, 2) @map("rider_payout")  // rider's net delivery earnings → rider pool
+  adminProfit      Decimal?    @db.Decimal(10, 2) @map("admin_profit")  // serviceFee + commission + admin delivery cut
+  distanceKm       Decimal?    @db.Decimal(8, 3)  @map("distance_km")
+  // Idempotency guards for ledger postings
+  storeCredited    Boolean     @default(false) @map("store_credited")
+  riderCredited    Boolean     @default(false) @map("rider_credited")
+  // Idempotency guards for reversing those postings on cancellation/settlement
+  storeReversed    Boolean     @default(false) @map("store_reversed")
+  riderReversed    Boolean     @default(false) @map("rider_reversed")
+  // True once the store's provisional credit has been promoted from the
+  // wallet's pendingBalance into its withdrawable balance (order COMPLETED).
+  storeSettled     Boolean     @default(false) @map("store_settled")
+
+  // Tracks riders who declined or were skipped for this order: [{riderId, name, declinedAt}]
+  riderDeclines    Json        @default("[]") @map("rider_declines")
+
+  couponCode       String?     @map("coupon_code")
+  discountAmount   Decimal?    @db.Decimal(10, 2) @map("discount_amount")
+
   paymentReference String?     @map("payment_reference")
   assignedAt       DateTime?   @map("assigned_at")
   createdAt        DateTime    @default(now()) @map("created_at")
   updatedAt        DateTime    @updatedAt @map("updated_at")
 
-  customer   User        @relation(fields: [customerUserId], references: [id])
-  store      Store       @relation(fields: [storeId], references: [id])
-  rider      Rider?      @relation("RiderOrders", fields: [riderId], references: [id])
-  orderItems OrderItem[]
+  customer     User          @relation(fields: [customerUserId], references: [id])
+  store        Store         @relation(fields: [storeId], references: [id])
+  rider        Rider?        @relation("RiderOrders", fields: [riderId], references: [id])
+  orderItems   OrderItem[]
+  ledgerEntries LedgerEntry[]
+  settlements  Settlement[]
 
   @@map("orders")
+}
+
+// ── Settlements: audit trail for cancellations / refunds after payment ────────
+// Records every time an order is unwound (store declined, store timed out, admin
+// cancelled, or admin issued a settlement), including the refund and the wallet
+// reversals applied, who triggered it, and who was at fault.
+enum SettlementType {
+  STORE_DECLINE
+  STORE_TIMEOUT
+  ADMIN_CANCEL
+  ADMIN_SETTLE
+}
+
+enum SettlementStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum FaultParty {
+  STORE
+  RIDER
+  CUSTOMER
+  PLATFORM
+}
+
+model Settlement {
+  id              String           @id @default(uuid())
+  orderId         String           @map("order_id")
+  type            SettlementType
+  reason          String?
+  // Amount refunded to the customer (to source / Flutterwave).
+  refundAmount    Decimal          @db.Decimal(10, 2) @map("refund_amount")
+  // Amounts clawed back from the store / rider wallets.
+  storeReversal   Decimal          @default(0) @db.Decimal(10, 2) @map("store_reversal")
+  riderReversal   Decimal          @default(0) @db.Decimal(10, 2) @map("rider_reversal")
+  // Optional compensation paid to the rider out of platform funds.
+  riderCompensation Decimal        @default(0) @db.Decimal(10, 2) @map("rider_compensation")
+  faultParty      FaultParty?      @map("fault_party")
+  refundStatus    SettlementStatus @default(PENDING) @map("refund_status")
+  createdByUserId String?          @map("created_by_user_id")
+  createdAt       DateTime         @default(now()) @map("created_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("settlements")
 }
 
 model OrderItem {
@@ -209,7 +392,11 @@ model OrderItem {
   productId   String  @map("product_id")
   productName String  @map("product_name")
   unitPrice   Decimal @db.Decimal(10, 2) @map("unit_price")
-  quantity    Int
+  // Decimal so measured goods can be ordered in fractions (0.5 mudu, 2.5 kg).
+  quantity    Decimal @db.Decimal(10, 3)
+  // Snapshot of the product's unit at order time, so a later change to the
+  // product does not rewrite the history of what was actually bought.
+  unit        ProductUnit @default(PIECE)
 
   order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id])
@@ -226,11 +413,197 @@ model Rider {
   currentLatitude  Float?    @map("current_latitude")
   currentLongitude Float?    @map("current_longitude")
   lastPingAt       DateTime? @map("last_ping_at")
+  // Vehicle info — filled in from the rider's VehicleInfo screen
+  vehicleType      String?   @map("vehicle_type")   // "motorcycle" | "bicycle" | "car"
+  vehiclePlate     String?   @map("vehicle_plate")
+  vehicleColor     String?   @map("vehicle_color")
+  // Moderation — mirrors Store. Soft delete for the same reason: orders
+  // reference riders and their earnings history must survive.
+  status           AccountStatus @default(ACTIVE)
+  suspendedReason  String?       @map("suspended_reason")
+  suspendedAt      DateTime?     @map("suspended_at")
+  deletedAt        DateTime?     @map("deleted_at")
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   orders Order[] @relation("RiderOrders")
+  wallet Wallet?
 
   @@map("riders")
+}
+
+// ── Saved payment tokens (Flutterwave tokenised cards) ────────────────────────
+// A token is saved the first time a card is successfully used.
+// The token can later be charged directly without opening the payment page.
+model PaymentToken {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  token        String   // Flutterwave card token (flw-t0...)
+  maskedCard   String   @map("masked_card")   // "VISA •••• •••• •••• 4567"
+  cardType     String   @map("card_type")     // "VISA" | "MASTERCARD" etc.
+  expiryMonth  String   @map("expiry_month")  // "12"
+  expiryYear   String   @map("expiry_year")   // "2025"
+  isDefault    Boolean  @default(false) @map("is_default")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("payment_tokens")
+}
+
+// ==================== PHASE 5 MODELS — pricing, wallets, payouts ====================
+
+// Singleton row holding all tunable pricing / commission parameters.
+// Edited from the admin panel so percentages and delivery params are flexible.
+model PlatformSettings {
+  id                    String   @id @default(uuid())
+  commissionPercent     Decimal  @default(8)    @db.Decimal(5, 2)  @map("commission_percent")
+  serviceFeePercent     Decimal  @default(6)    @db.Decimal(5, 2)  @map("service_fee_percent")
+  deliveryBaseFee       Decimal  @default(1300) @db.Decimal(10, 2) @map("delivery_base_fee")
+  freeRadiusKm          Decimal  @default(3)    @db.Decimal(6, 2)  @map("free_radius_km")
+  perKmRate             Decimal  @default(250)  @db.Decimal(10, 2) @map("per_km_rate")
+  extraStopFee          Decimal  @default(350)  @db.Decimal(10, 2) @map("extra_stop_fee")
+  bulkyItemFee          Decimal  @default(500)  @db.Decimal(10, 2) @map("bulky_item_fee")
+  nightSurcharge        Decimal  @default(500)  @db.Decimal(10, 2) @map("night_surcharge")
+  nightStartHour        Int      @default(20)   @map("night_start_hour")
+  nightEndHour          Int      @default(6)    @map("night_end_hour")
+  // Admin's share of the delivery fee (the rest goes to the rider).
+  riderDeliverySharePercent Decimal @default(80) @db.Decimal(5, 2) @map("rider_delivery_share_percent")
+  // Flutterwave Payout Subaccount (wallet) references for the shared pools.
+  storePoolSubaccountId String?  @map("store_pool_subaccount_id")
+  riderPoolSubaccountId String?  @map("rider_pool_subaccount_id")
+  withdrawalMinAmount   Decimal  @default(1000) @db.Decimal(10, 2) @map("withdrawal_min_amount")
+  withdrawalFeePercent  Decimal  @default(0)    @db.Decimal(5, 2)  @map("withdrawal_fee_percent")
+  // Minutes a store has to accept a paid order before it auto-cancels + refunds.
+  storeAcceptTimeoutMinutes Int  @default(10)   @map("store_accept_timeout_minutes")
+  // When true, the reconciliation sweep tops up the Flutterwave pool wallets to
+  // match the ledger if an inline transfer previously failed. Keep off until the
+  // Flutterwave Transfers API (IP whitelisting) is configured.
+  poolSweepEnabled      Boolean  @default(false) @map("pool_sweep_enabled")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  @@map("platform_settings")
+}
+
+enum DiscountType {
+  PERCENT
+  FIXED
+}
+
+model Coupon {
+  id             String       @id @default(uuid())
+  code           String       @unique
+  description    String?
+  discountType   DiscountType @map("discount_type")
+  discountValue  Decimal      @db.Decimal(10, 2) @map("discount_value")
+  minOrderAmount Decimal?     @db.Decimal(10, 2) @map("min_order_amount")
+  maxDiscount    Decimal?     @db.Decimal(10, 2) @map("max_discount")
+  usageLimit     Int?         @map("usage_limit")
+  usedCount      Int          @default(0) @map("used_count")
+  isActive       Boolean      @default(true) @map("is_active")
+  expiresAt      DateTime?    @map("expires_at")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  @@map("coupons")
+}
+
+enum WalletOwnerType {
+  STORE
+  RIDER
+}
+
+// A store's or rider's accumulated, withdrawable balance.
+// balance is a cached running total kept in sync with ledgerEntries.
+model Wallet {
+  id        String          @id @default(uuid())
+  ownerType WalletOwnerType @map("owner_type")
+  storeId   String?         @unique @map("store_id")
+  riderId   String?         @unique @map("rider_id")
+  // Withdrawable funds — only money that has been *earned* (order COMPLETED).
+  balance   Decimal         @default(0) @db.Decimal(12, 2)
+  // Provisional funds — credited at PAID, before the order is fulfilled. Not
+  // withdrawable: an order can still be declined, timed out, or settled, and
+  // the credit clawed back. Promoted into `balance` when the order completes.
+  pendingBalance Decimal    @default(0) @map("pending_balance") @db.Decimal(12, 2)
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
+
+  store         Store?        @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  rider         Rider?        @relation(fields: [riderId], references: [id], onDelete: Cascade)
+  ledgerEntries LedgerEntry[]
+  withdrawals   Withdrawal[]
+
+  @@map("wallets")
+}
+
+enum LedgerEntryType {
+  CREDIT
+  DEBIT
+  FEE
+}
+
+// Immutable record of every balance change on a wallet.
+model LedgerEntry {
+  id        String          @id @default(uuid())
+  walletId  String          @map("wallet_id")
+  orderId   String?         @map("order_id")
+  type      LedgerEntryType
+  amount    Decimal         @db.Decimal(12, 2)
+  reason    String
+  createdAt DateTime        @default(now()) @map("created_at")
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  order  Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([walletId])
+  @@index([orderId])
+  @@map("ledger_entries")
+}
+
+// A user's saved payout destination (resolved + verified via Flutterwave).
+model BankAccount {
+  id            String   @id @default(uuid())
+  userId        String   @unique @map("user_id")
+  bankCode      String   @map("bank_code")
+  bankName      String?  @map("bank_name")
+  accountNumber String   @map("account_number")
+  accountName   String   @map("account_name")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("bank_accounts")
+}
+
+enum WithdrawalStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// A withdrawal request that triggers a Flutterwave transfer from a pool wallet.
+model Withdrawal {
+  id            String           @id @default(uuid())
+  walletId      String           @map("wallet_id")
+  amount        Decimal          @db.Decimal(12, 2)
+  fee           Decimal          @default(0) @db.Decimal(10, 2)
+  status        WithdrawalStatus @default(PENDING)
+  reference     String           @unique
+  flwTransferId String?          @map("flw_transfer_id")
+  bankCode      String           @map("bank_code")
+  accountNumber String           @map("account_number")
+  accountName   String           @map("account_name")
+  failureReason String?          @map("failure_reason")
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@index([walletId])
+  @@map("withdrawals")
 }

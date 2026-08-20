@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,33 +6,56 @@ import {
   ScrollView,
   Switch,
   TouchableOpacity,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { COLORS, SPACING } from '../../constants/config';
+import { usersApi, NotificationPreferences } from '../../api/users';
 
 type Props = {
   navigation: NativeStackNavigationProp<any>;
 };
 
 export const NotificationsSettingsScreen: React.FC<Props> = ({ navigation }) => {
-  const [pushEnabled, setPushEnabled] = useState(true);
-  const [orderUpdates, setOrderUpdates] = useState(true);
-  const [promotions, setPromotions] = useState(true);
-  const [newStores, setNewStores] = useState(false);
-  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [prefs, setPrefs] = useState<NotificationPreferences | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    usersApi.getNotificationPreferences()
+      .then(setPrefs)
+      .catch(() => Alert.alert('Error', 'Could not load notification settings'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const updatePref = useCallback(async (key: keyof NotificationPreferences, value: boolean) => {
+    if (!prefs) return;
+    const prev = prefs;
+    const next = { ...prefs, [key]: value };
+    setPrefs(next);
+    setSaving(true);
+    try {
+      const saved = await usersApi.updateNotificationPreferences({ [key]: value });
+      setPrefs(saved);
+    } catch {
+      setPrefs(prev);
+      Alert.alert('Error', 'Could not save preference');
+    } finally {
+      setSaving(false);
+    }
+  }, [prefs]);
 
   const NotificationItem = ({
     title,
     description,
-    value,
-    onValueChange,
+    prefKey,
   }: {
     title: string;
     description: string;
-    value: boolean;
-    onValueChange: (value: boolean) => void;
+    prefKey: keyof NotificationPreferences;
   }) => (
     <View style={styles.notificationItem}>
       <View style={styles.notificationInfo}>
@@ -40,81 +63,83 @@ export const NotificationsSettingsScreen: React.FC<Props> = ({ navigation }) => 
         <Text style={styles.notificationDescription}>{description}</Text>
       </View>
       <Switch
-        value={value}
-        onValueChange={onValueChange}
+        value={prefs?.[prefKey] ?? true}
+        onValueChange={(v) => updatePref(prefKey, v)}
+        disabled={loading || saving}
         trackColor={{ false: '#E0E0E0', true: '#A5D6A7' }}
-        thumbColor={value ? COLORS.primary : '#BDBDBD'}
+        thumbColor={prefs?.[prefKey] ? COLORS.primary : '#BDBDBD'}
       />
     </View>
   );
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notifications</Text>
-        <View style={{ width: 24 }} />
+        {saving ? (
+          <ActivityIndicator size="small" color={COLORS.primary} />
+        ) : (
+          <View style={{ width: 24 }} />
+        )}
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Push Notifications Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Push Notifications</Text>
-          <View style={styles.sectionContent}>
-            <NotificationItem
-              title="Enable Push Notifications"
-              description="Receive notifications on your device"
-              value={pushEnabled}
-              onValueChange={setPushEnabled}
-            />
-          </View>
+      {loading ? (
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
         </View>
-
-        {/* Notification Types */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Notification Types</Text>
-          <View style={styles.sectionContent}>
-            <NotificationItem
-              title="Order Updates"
-              description="Get notified about your order status"
-              value={orderUpdates}
-              onValueChange={setOrderUpdates}
-            />
-            <View style={styles.divider} />
-            <NotificationItem
-              title="Promotions & Offers"
-              description="Receive special deals and discounts"
-              value={promotions}
-              onValueChange={setPromotions}
-            />
-            <View style={styles.divider} />
-            <NotificationItem
-              title="New Stores"
-              description="Be notified when new stores open nearby"
-              value={newStores}
-              onValueChange={setNewStores}
-            />
+      ) : (
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Push Notifications</Text>
+            <View style={styles.sectionContent}>
+              <NotificationItem
+                title="Enable Push Notifications"
+                description="Receive notifications on your device"
+                prefKey="notifyPush"
+              />
+            </View>
           </View>
-        </View>
 
-        {/* Email Notifications */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Email Notifications</Text>
-          <View style={styles.sectionContent}>
-            <NotificationItem
-              title="Email Updates"
-              description="Receive order confirmations and updates via email"
-              value={emailNotifications}
-              onValueChange={setEmailNotifications}
-            />
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Notification Types</Text>
+            <View style={styles.sectionContent}>
+              <NotificationItem
+                title="Order Updates"
+                description="Get notified about your order status"
+                prefKey="notifyOrderUpdates"
+              />
+              <View style={styles.divider} />
+              <NotificationItem
+                title="Promotions & Offers"
+                description="Receive special deals and discounts"
+                prefKey="notifyPromotions"
+              />
+              <View style={styles.divider} />
+              <NotificationItem
+                title="New Stores"
+                description="Be notified when new stores open nearby"
+                prefKey="notifyNewStores"
+              />
+            </View>
           </View>
-        </View>
 
-        <View style={{ height: 50 }} />
-      </ScrollView>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Email Notifications</Text>
+            <View style={styles.sectionContent}>
+              <NotificationItem
+                title="Email Updates"
+                description="Receive order confirmations and updates via email"
+                prefKey="notifyEmail"
+              />
+            </View>
+          </View>
+
+          <View style={{ height: 50 }} />
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 };
@@ -138,6 +163,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: COLORS.text,
+  },
+  loadingWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   scrollView: {
     flex: 1,

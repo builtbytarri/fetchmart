@@ -59,7 +59,8 @@ export default function MapPage() {
   const [selectedType, setSelectedType] = useState<'all' | 'stores' | 'riders'>('all');
 
   const storeIcon = useMemo(() => createCustomIcon('#8B5CF6', '🏪'), []);
-  const riderIcon = useMemo(() => createCustomIcon('#10B981', '🏍️'), []);
+  const riderAvailableIcon = useMemo(() => createCustomIcon('#10B981', '🏍️'), []);
+  const riderBusyIcon = useMemo(() => createCustomIcon('#F97316', '🏍️'), []);
 
   useEffect(() => {
     setIsClient(true);
@@ -210,7 +211,7 @@ export default function MapPage() {
                     <Marker
                       key={`rider-${rider.id}`}
                       position={[rider.currentLatitude, rider.currentLongitude]}
-                      icon={riderIcon}
+                      icon={rider.isBusy ? riderBusyIcon : riderAvailableIcon}
                     >
                       <Popup>
                         <div className="p-3 min-w-[200px]">
@@ -220,9 +221,15 @@ export default function MapPage() {
                             </div>
                             <div>
                               <h3 className="font-semibold text-gray-900">{rider.user?.name}</h3>
-                              <Badge className="bg-green-100 text-green-800">
-                                ● Available
-                              </Badge>
+                              {rider.isBusy ? (
+                                <Badge className="bg-orange-100 text-orange-800">
+                                  ● On Delivery
+                                </Badge>
+                              ) : (
+                                <Badge className="bg-green-100 text-green-800">
+                                  ● Available
+                                </Badge>
+                              )}
                             </div>
                           </div>
                           <div className="space-y-2 text-sm text-gray-600">

@@ -7,7 +7,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { RidersService } from './riders.service';
-import { UpdateAvailabilityDto, UpdateLocationDto } from './dto';
+import { UpdateAvailabilityDto, UpdateLocationDto, UpdateVehicleDto } from './dto';
 import { JwtAuthGuard, RolesGuard, Roles, CurrentUser } from '../auth';
 import { UserRole } from '@prisma/client';
 
@@ -46,5 +46,13 @@ export class RidersController {
   @Get('me')
   async getMe(@CurrentUser() user: TokenPayload) {
     return this.ridersService.getMe(user.userId);
+  }
+
+  @Patch('vehicle')
+  async updateVehicle(
+    @CurrentUser() user: TokenPayload,
+    @Body() dto: UpdateVehicleDto,
+  ) {
+    return this.ridersService.updateVehicle(user.userId, dto);
   }
 }

@@ -10,6 +10,9 @@ export interface InitiatePaymentOptions {
   currency: string;
   customerEmail: string;
   customerName: string;
+  /** Mobile app's deep-link redirect URL (e.g. fetchmart://payment/callback).
+   *  Falls back to the provider's default if not provided. */
+  redirectUrl?: string;
   metadata?: Record<string, unknown>;
 }
 
@@ -27,6 +30,13 @@ export interface PaymentVerificationResult {
   amount: number;
   currency: string;
   paidAt?: Date;
+  /** Flutterwave reusable card token — only present for card payments */
+  cardToken?: string;
+  /** Masked card info for display, e.g. "VISA •••• 4567" */
+  maskedCard?: string;
+  cardType?: string;
+  expiryMonth?: string;
+  expiryYear?: string;
 }
 
 export interface RefundResult {

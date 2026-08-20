@@ -15,6 +15,7 @@ import { storesApi } from '../../api';
 import { Store } from '../../types';
 import { COLORS, SPACING } from '../../constants/config';
 import { CustomerStackParamList } from '../../navigation/types';
+import { useAuthStore, useFavouritesStore } from '../../store';
 
 const { width } = Dimensions.get('window');
 const STORE_CARD_WIDTH = (width - SPACING.md * 3) / 2;
@@ -23,15 +24,20 @@ type Props = NativeStackScreenProps<CustomerStackParamList, 'AllStores'>;
 
 export const AllStoresScreen: React.FC<Props> = ({ navigation, route }) => {
   const { title } = route.params;
+  const { user } = useAuthStore();
+  const { ids: favouriteIds, toggle: toggleFavourite } = useFavouritesStore();
   const [stores, setStores] = useState<Store[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchStores = async () => {
+      // Use user's saved location; fall back to central Lagos if not set
+      const lat = user?.latitude ?? 6.5244;
+      const lng = user?.longitude ?? 3.3792;
       try {
         const nearbyStores = await storesApi.getNearby({
-          latitude: 6.5244,
-          longitude: 3.3792,
+          latitude: lat,
+          longitude: lng,
           radius: 20,
         });
         setStores(nearbyStores);
@@ -49,31 +55,41 @@ export const AllStoresScreen: React.FC<Props> = ({ navigation, route }) => {
     navigation.navigate('StoreDetails', { storeId: store.id });
   };
 
-  const renderStoreCard = ({ item }: { item: Store }) => (
-    <TouchableOpacity
-      style={styles.storeCard}
-      onPress={() => handleStorePress(item)}
-      activeOpacity={0.8}
-    >
-      <View style={styles.storeImageContainer}>
-        <View style={styles.storeImagePlaceholder}>
-          <Ionicons name="storefront" size={40} color={COLORS.textSecondary} />
+  const renderStoreCard = ({ item }: { item: Store }) => {
+    const isFav = favouriteIds.has(item.id);
+    return (
+      <TouchableOpacity
+        style={styles.storeCard}
+        onPress={() => handleStorePress(item)}
+        activeOpacity={0.8}
+      >
+        <View style={styles.storeImageContainer}>
+          <View style={styles.storeImagePlaceholder}>
+            <Ionicons name="storefront" size={40} color={COLORS.textSecondary} />
+          </View>
+          <TouchableOpacity
+            style={styles.favoriteButton}
+            onPress={() => toggleFavourite(item.id)}
+          >
+            <Ionicons
+              name={isFav ? 'heart' : 'heart-outline'}
+              size={18}
+              color={isFav ? COLORS.error : COLORS.error}
+            />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.favoriteButton}>
-          <Ionicons name="heart-outline" size={18} color={COLORS.error} />
-        </TouchableOpacity>
-      </View>
-      <View style={styles.storeInfo}>
-        <Text style={styles.storeName} numberOfLines={1}>{item.name}</Text>
-        {item.description && (
-          <Text style={styles.storeDescription} numberOfLines={2}>{item.description}</Text>
-        )}
-        {item.distance !== undefined && (
-          <Text style={styles.storeDistance}>{item.distance.toFixed(1)} km away</Text>
-        )}
-      </View>
-    </TouchableOpacity>
-  );
+        <View style={styles.storeInfo}>
+          <Text style={styles.storeName} numberOfLines={1}>{item.name}</Text>
+          {item.description && (
+            <Text style={styles.storeDescription} numberOfLines={2}>{item.description}</Text>
+          )}
+          {item.distance !== undefined && (
+            <Text style={styles.storeDistance}>{item.distance.toFixed(1)} km away</Text>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   if (isLoading) {
     return (
@@ -118,15 +134,8 @@ export const AllStoresScreen: React.FC<Props> = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  container: { flex: 1, backgroundColor: '#F5F5F5' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -137,24 +146,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
   },
-  backButton: {
-    padding: 4,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  headerSpacer: {
-    width: 32,
-  },
-  listContent: {
-    padding: SPACING.md,
-  },
-  row: {
-    justifyContent: 'space-between',
-    marginBottom: SPACING.md,
-  },
+  backButton: { padding: 4 },
+  headerTitle: { fontSize: 18, fontWeight: '600', color: COLORS.text },
+  headerSpacer: { width: 32 },
+  listContent: { padding: SPACING.md },
+  row: { justifyContent: 'space-between', marginBottom: SPACING.md },
   storeCard: {
     width: STORE_CARD_WIDTH,
     backgroundColor: COLORS.white,
@@ -181,32 +177,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 4,
   },
-  storeInfo: {
-    padding: SPACING.sm,
-  },
-  storeName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.text,
-    marginBottom: 2,
-  },
-  storeDescription: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    marginBottom: 4,
-  },
-  storeDistance: {
-    fontSize: 12,
-    color: COLORS.primary,
-    fontWeight: '500',
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    paddingVertical: SPACING.xl * 2,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.md,
-  },
+  storeInfo: { padding: SPACING.sm },
+  storeName: { fontSize: 14, fontWeight: '600', color: COLORS.text, marginBottom: 2 },
+  storeDescription: { fontSize: 12, color: COLORS.textSecondary, marginBottom: 4 },
+  storeDistance: { fontSize: 12, color: COLORS.primary, fontWeight: '500' },
+  emptyContainer: { alignItems: 'center', paddingVertical: SPACING.xl * 2 },
+  emptyText: { fontSize: 16, color: COLORS.textSecondary, marginTop: SPACING.md },
 });

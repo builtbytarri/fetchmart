@@ -13,9 +13,15 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { COLORS, SPACING } from '../../constants/config';
+import { COLORS, SPACING, GOOGLE_OAUTH_WEB_CLIENT_ID } from '../../constants/config';
 import { useAuthStore } from '../../store';
-import { appleAuth } from '../../api';
+import { appleAuth, googleAuth } from '../../api';
+
+// Both must hold: the native module has to be wired up (googleAuth is stubbed
+// until then) and the OAuth client IDs have to be filled in.
+const GOOGLE_ENABLED =
+  googleAuth.isAvailable() &&
+  Boolean(GOOGLE_OAUTH_WEB_CLIENT_ID && !GOOGLE_OAUTH_WEB_CLIENT_ID.startsWith('REPLACE'));
 
 const { width, height } = Dimensions.get('window');
 
@@ -105,21 +111,23 @@ export const AuthLandingScreen: React.FC<Props> = ({ navigation }) => {
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity
-            style={[styles.socialButton, isLoading && styles.socialButtonDisabled]}
-            onPress={handleGoogle}
-            disabled={isLoading}
-            activeOpacity={0.8}
-          >
-            {isLoading ? (
-              <ActivityIndicator size="small" color={COLORS.text} />
-            ) : (
-              <>
-                <Ionicons name="logo-google" size={20} color="#DB4437" />
-                <Text style={styles.socialButtonText}>Google</Text>
-              </>
-            )}
-          </TouchableOpacity>
+          {GOOGLE_ENABLED && (
+            <TouchableOpacity
+              style={[styles.socialButton, isLoading && styles.socialButtonDisabled]}
+              onPress={handleGoogle}
+              disabled={isLoading}
+              activeOpacity={0.8}
+            >
+              {isLoading ? (
+                <ActivityIndicator size="small" color={COLORS.text} />
+              ) : (
+                <>
+                  <Ionicons name="logo-google" size={20} color="#DB4437" />
+                  <Text style={styles.socialButtonText}>Google</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </View>
@@ -164,7 +172,7 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.xl * 2,
   },
   getStartedButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.primary,
     paddingVertical: SPACING.md + 2,
     borderRadius: 30,
     alignItems: 'center',

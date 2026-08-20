@@ -16,6 +16,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { storesApi } from '../../api';
 import { Store } from '../../types';
 import { COLORS, SPACING } from '../../constants/config';
+import { LocationPickerScreen } from '../auth/LocationPickerScreen';
+import { AddressAutocomplete, ImageUploadField } from '../../components';
 
 type Props = {
   navigation: NativeStackNavigationProp<any>;
@@ -26,6 +28,11 @@ export const StoreSettingsScreen: React.FC<Props> = ({ navigation }) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [isOpen, setIsOpen] = useState(false);
+  const [address, setAddress] = useState('');
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [showMapPicker, setShowMapPicker] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -34,10 +41,15 @@ export const StoreSettingsScreen: React.FC<Props> = ({ navigation }) => {
       try {
         const stores = await storesApi.getMyStores();
         if (stores.length > 0) {
-          setStore(stores[0]);
-          setName(stores[0].name);
-          setDescription(stores[0].description || '');
-          setIsOpen(stores[0].isOpen);
+          const s = stores[0];
+          setStore(s);
+          setName(s.name);
+          setDescription(s.description || '');
+          setIsOpen(s.isOpen);
+          setImageUrl((s as any).imageUrl ?? null);
+          setAddress((s as any).address || '');
+          setLatitude(s.latitude ?? null);
+          setLongitude(s.longitude ?? null);
         }
       } catch (err) {
         console.error('Failed to load store:', err);
@@ -62,6 +74,10 @@ export const StoreSettingsScreen: React.FC<Props> = ({ navigation }) => {
         name: name.trim(),
         description: description.trim() || undefined,
         isOpen,
+        latitude: latitude ?? undefined,
+        longitude: longitude ?? undefined,
+        address: address.trim() || undefined,
+        imageUrl: imageUrl ?? undefined,
       });
       Alert.alert('Success', 'Store settings updated', [
         { text: 'OK', onPress: () => navigation.goBack() },
@@ -100,6 +116,21 @@ export const StoreSettingsScreen: React.FC<Props> = ({ navigation }) => {
     );
   }
 
+  // Full-screen map picker
+  if (showMapPicker) {
+    return (
+      <LocationPickerScreen
+        onLocationSelected={({ latitude: lat, longitude: lng, address: addr }) => {
+          setLatitude(lat);
+          setLongitude(lng);
+          setAddress(addr);
+          setShowMapPicker(false);
+        }}
+        onBack={() => setShowMapPicker(false)}
+      />
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
@@ -111,7 +142,11 @@ export const StoreSettingsScreen: React.FC<Props> = ({ navigation }) => {
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Store Status */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Store Status</Text>
@@ -135,6 +170,13 @@ export const StoreSettingsScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Store Information</Text>
           <View style={styles.formCard}>
+            <ImageUploadField
+              label="Storefront Photo"
+              value={imageUrl}
+              onChange={setImageUrl}
+              folder="stores"
+              shape="wide"
+            />
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Store Name</Text>
               <TextInput
@@ -164,14 +206,35 @@ export const StoreSettingsScreen: React.FC<Props> = ({ navigation }) => {
 
         {/* Location */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Location</Text>
-          <View style={styles.locationCard}>
-            <Ionicons name="location" size={20} color={COLORS.primary} />
-            <Text style={styles.locationText}>
-              {store.latitude?.toFixed(6) || 'N/A'}, {store.longitude?.toFixed(6) || 'N/A'}
-            </Text>
+          <Text style={styles.sectionTitle}>Store Location</Text>
+          <View style={styles.formCard}>
+            <AddressAutocomplete
+              value={address}
+              placeholder="Search for store address"
+              onSelect={({ address: addr, latitude: lat, longitude: lng }) => {
+                setAddress(addr);
+                setLatitude(lat);
+                setLongitude(lng);
+              }}
+            />
+
+            <TouchableOpacity
+              style={styles.mapPickerBtn}
+              onPress={() => setShowMapPicker(true)}
+            >
+              <Ionicons name="map-outline" size={16} color={COLORS.primary} />
+              <Text style={styles.mapPickerText}>Pick exact location on map</Text>
+            </TouchableOpacity>
+
+            {latitude !== null && longitude !== null && (
+              <View style={styles.locationConfirmed}>
+                <Ionicons name="checkmark-circle" size={16} color={COLORS.primary} />
+                <Text style={styles.locationConfirmedText} numberOfLines={2}>
+                  {address || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`}
+                </Text>
+              </View>
+            )}
           </View>
-          <Text style={styles.locationNote}>Contact support to update your store location</Text>
         </View>
 
         <View style={{ height: 100 }} />
@@ -196,16 +259,8 @@ export const StoreSettingsScreen: React.FC<Props> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: SPACING.lg,
-  },
+  container: { flex: 1, backgroundColor: '#F5F5F5' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: SPACING.lg },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -216,18 +271,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  section: {
-    marginTop: SPACING.md,
-    marginHorizontal: SPACING.md,
-  },
+  headerTitle: { fontSize: 18, fontWeight: '600', color: COLORS.text },
+  scrollView: { flex: 1 },
+  section: { marginTop: SPACING.md, marginHorizontal: SPACING.md },
   sectionTitle: {
     fontSize: 14,
     fontWeight: '600',
@@ -242,33 +288,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: SPACING.md,
   },
-  statusInfo: {
-    flex: 1,
-  },
-  statusLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  statusDescription: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    marginTop: 2,
-  },
-  formCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: SPACING.md,
-  },
-  inputGroup: {
-    marginBottom: SPACING.md,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: COLORS.text,
-    marginBottom: SPACING.xs,
-  },
+  statusInfo: { flex: 1 },
+  statusLabel: { fontSize: 16, fontWeight: '600', color: COLORS.text },
+  statusDescription: { fontSize: 13, color: COLORS.textSecondary, marginTop: 2 },
+  formCard: { backgroundColor: COLORS.white, borderRadius: 12, padding: SPACING.md },
+  inputGroup: { marginBottom: SPACING.md },
+  label: { fontSize: 14, fontWeight: '500', color: COLORS.text, marginBottom: SPACING.xs },
   input: {
     backgroundColor: '#F5F5F5',
     borderWidth: 1,
@@ -279,39 +304,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.text,
   },
-  textArea: {
-    height: 80,
-    paddingTop: SPACING.sm,
-  },
-  locationCard: {
+  textArea: { height: 80, paddingTop: SPACING.sm },
+  mapPickerBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: SPACING.md,
-    gap: SPACING.sm,
-  },
-  locationText: {
-    fontSize: 14,
-    color: COLORS.text,
-  },
-  locationNote: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
+    gap: 8,
+    paddingVertical: SPACING.sm,
     marginTop: SPACING.xs,
   },
-  noStoreText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: COLORS.text,
-    marginTop: SPACING.md,
+  mapPickerText: { fontSize: 14, color: COLORS.primary, fontWeight: '500' },
+  locationConfirmed: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8F5E9',
+    borderRadius: 10,
+    padding: SPACING.sm,
+    marginTop: SPACING.sm,
+    gap: SPACING.xs,
   },
-  noStoreSubtext: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    marginTop: 4,
-    textAlign: 'center',
-  },
+  locationConfirmedText: { flex: 1, fontSize: 13, color: COLORS.text },
+  noStoreText: { fontSize: 18, fontWeight: '600', color: COLORS.text, marginTop: SPACING.md },
+  noStoreSubtext: { fontSize: 14, color: COLORS.textSecondary, marginTop: 4, textAlign: 'center' },
   bottomBar: {
     backgroundColor: COLORS.white,
     paddingHorizontal: SPACING.md,
@@ -325,12 +338,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
   },
-  saveButtonDisabled: {
-    opacity: 0.7,
-  },
-  saveButtonText: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  saveButtonDisabled: { opacity: 0.7 },
+  saveButtonText: { color: COLORS.white, fontSize: 16, fontWeight: '600' },
 });

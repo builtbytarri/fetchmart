@@ -130,6 +130,7 @@ interface Order {
   totalAmount: string | number;
   createdAt: string;
   riderId?: string;
+  riderDeclines?: { riderId: string; name: string; declinedAt: string }[];
   customer?: { id: string; name: string; email: string; phone?: string };
   store?: { id: string; name: string };
   rider?: { id: string; user: { name: string; phone?: string } };
@@ -138,19 +139,27 @@ interface Order {
 
 interface Rider {
   id: string;
+  isBusy: boolean;
+  isAvailable: boolean;
+  activeCount: number;
+  distKm: number | null;
   user: { id: string; name: string; phone?: string };
 }
 
-function OrderActionsMenu({ 
-  order, 
-  onAssignRider, 
+function OrderActionsMenu({
+  order,
+  onAssignRider,
   onUpdateStatus,
-  onCancel 
-}: { 
+  onCancel,
+  onSettle,
+  onNotifyRider,
+}: {
   order: Order;
   onAssignRider: (order: Order) => void;
   onUpdateStatus: (orderId: string, status: string) => void;
   onCancel: (orderId: string) => void;
+  onSettle: (orderId: string) => void;
+  onNotifyRider: (orderId: string) => void;
 }) {
   const status = order.status;
   
@@ -162,9 +171,11 @@ function OrderActionsMenu({
         actions.push({ label: 'Mark as Paid', icon: CheckCircle, action: () => onUpdateStatus(order.id, 'PAID') });
         break;
       case 'PAID':
-        actions.push({ label: 'Store Accepted', icon: Package, action: () => onUpdateStatus(order.id, 'STORE_ACCEPTED') });
+        // Accepting moves the order straight to PREPARING (no separate step).
+        actions.push({ label: 'Accept Order', icon: Package, action: () => onUpdateStatus(order.id, 'PREPARING') });
         break;
       case 'STORE_ACCEPTED':
+        // Legacy in-flight orders still on STORE_ACCEPTED can advance.
         actions.push({ label: 'Start Preparing', icon: RefreshCw, action: () => onUpdateStatus(order.id, 'PREPARING') });
         break;
       case 'PREPARING':
@@ -174,11 +185,11 @@ function OrderActionsMenu({
         if (!order.riderId) {
           actions.push({ label: 'Assign Rider', icon: UserPlus, action: () => onAssignRider(order) });
         } else {
-          actions.push({ label: 'Notify Rider', icon: Bell, action: () => alert('Notification sent to rider!') });
+          actions.push({ label: 'Notify Rider', icon: Bell, action: () => onNotifyRider(order.id) });
         }
         break;
       case 'ASSIGNED':
-        actions.push({ label: 'Notify Rider', icon: Bell, action: () => alert('Notification sent to rider!') });
+        actions.push({ label: 'Notify Rider', icon: Bell, action: () => onNotifyRider(order.id) });
         actions.push({ label: 'Mark Picked Up', icon: Truck, action: () => onUpdateStatus(order.id, 'PICKED_UP') });
         break;
       case 'PICKED_UP':
@@ -193,7 +204,10 @@ function OrderActionsMenu({
     }
     
     if (!['COMPLETED', 'CANCELLED'].includes(status)) {
-      actions.push({ label: 'Cancel Order', icon: XCircle, action: () => onCancel(order.id), variant: 'destructive' });
+      actions.push({ label: 'Cancel & Refund', icon: XCircle, action: () => onCancel(order.id), variant: 'destructive' });
+    } else {
+      // After-the-fact settlement / refund for terminal orders.
+      actions.push({ label: 'Settle / Refund', icon: RefreshCw, action: () => onSettle(order.id) });
     }
     
     return actions;
@@ -233,11 +247,15 @@ function ActiveOrderCard({
   onAssignRider,
   onUpdateStatus,
   onCancel,
+  onSettle,
+  onNotifyRider,
 }: {
   order: Order;
   onAssignRider: (order: Order) => void;
   onUpdateStatus: (orderId: string, status: string) => void;
   onCancel: (orderId: string) => void;
+  onSettle: (orderId: string) => void;
+  onNotifyRider: (orderId: string) => void;
 }) {
   const StatusIcon = statusIcons[order.status] || Clock;
   
@@ -262,6 +280,8 @@ function ActiveOrderCard({
             onAssignRider={onAssignRider}
             onUpdateStatus={onUpdateStatus}
             onCancel={onCancel}
+            onSettle={onSettle}
+            onNotifyRider={onNotifyRider}
           />
         </div>
       </div>
@@ -284,6 +304,12 @@ function ActiveOrderCard({
           <p className="font-semibold text-[#4CAF50]">{formatCurrency(Number(order.totalAmount))}</p>
         </div>
       </div>
+      {Array.isArray(order.riderDeclines) && order.riderDeclines.length > 0 && (
+        <div className="mt-2 flex items-center gap-1.5 text-xs text-orange-600 bg-orange-50 rounded px-2 py-1">
+          <AlertCircle className="h-3 w-3 flex-shrink-0" />
+          <span>{order.riderDeclines.length} rider{order.riderDeclines.length > 1 ? 's' : ''} declined ({order.riderDeclines.map((d: { name: string }) => d.name).join(', ')})</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -307,8 +333,9 @@ export default function OrdersPage() {
   });
 
   const { data: availableRiders } = useQuery({
-    queryKey: ['available-riders'],
-    queryFn: adminApi.getAvailableRiders,
+    queryKey: ['available-riders', selectedOrder?.id],
+    queryFn: () => adminApi.getAvailableRiders(selectedOrder?.id),
+    enabled: assignModalOpen,
   });
 
   const assignRiderMutation = useMutation({
@@ -339,6 +366,19 @@ export default function OrdersPage() {
     },
   });
 
+  const settleOrderMutation = useMutation({
+    mutationFn: ({ orderId, reason }: { orderId: string; reason?: string }) =>
+      adminApi.settleOrder(orderId, { reason, faultParty: 'PLATFORM' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['active-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+    },
+  });
+
+  const notifyRiderMutation = useMutation({
+    mutationFn: (orderId: string) => adminApi.notifyRider(orderId),
+  });
+
   const handleAssignRider = (order: Order) => {
     setSelectedOrder(order);
     setAssignModalOpen(true);
@@ -349,9 +389,20 @@ export default function OrdersPage() {
   };
 
   const handleCancel = (orderId: string) => {
-    if (confirm('Are you sure you want to cancel this order?')) {
+    if (confirm('Cancel this order? The customer will be refunded and the store/rider credits reversed.')) {
       cancelOrderMutation.mutate(orderId);
     }
+  };
+
+  const handleSettle = (orderId: string) => {
+    const reason = prompt('Settle & refund this order. Enter a reason (optional):') ?? undefined;
+    if (reason !== undefined) {
+      settleOrderMutation.mutate({ orderId, reason });
+    }
+  };
+
+  const handleNotifyRider = (orderId: string) => {
+    notifyRiderMutation.mutate(orderId);
   };
 
   const handleAssignRiderSubmit = (riderId: string) => {
@@ -360,12 +411,14 @@ export default function OrdersPage() {
     }
   };
 
-  const needsAttentionOrders = activeOrders?.filter((o: Order) => 
-    ['CREATED', 'PAID', 'READY'].includes(o.status) && !o.riderId
+  // CREATED orders are excluded — customer may still be completing payment.
+  // Only PAID (awaiting store acceptance) and READY (no rider yet) need action.
+  const needsAttentionOrders = activeOrders?.filter((o: Order) =>
+    ['PAID', 'READY'].includes(o.status) && !o.riderId
   ) || [];
 
-  const inProgressOrders = activeOrders?.filter((o: Order) => 
-    !['CREATED', 'PAID', 'READY'].includes(o.status) || o.riderId
+  const inProgressOrders = activeOrders?.filter((o: Order) =>
+    !['CREATED', 'PAID', 'READY'].includes(o.status) || (o.riderId != null)
   ) || [];
 
   return (
@@ -403,6 +456,8 @@ export default function OrdersPage() {
                     onAssignRider={handleAssignRider}
                     onUpdateStatus={handleUpdateStatus}
                     onCancel={handleCancel}
+                    onSettle={handleSettle}
+                    onNotifyRider={handleNotifyRider}
                   />
                 ))
               )}
@@ -433,6 +488,8 @@ export default function OrdersPage() {
                     onAssignRider={handleAssignRider}
                     onUpdateStatus={handleUpdateStatus}
                     onCancel={handleCancel}
+                    onSettle={handleSettle}
+                    onNotifyRider={handleNotifyRider}
                   />
                 ))
               )}
@@ -509,6 +566,8 @@ export default function OrdersPage() {
                           onAssignRider={handleAssignRider}
                           onUpdateStatus={handleUpdateStatus}
                           onCancel={handleCancel}
+                          onSettle={handleSettle}
+                          onNotifyRider={handleNotifyRider}
                         />
                       </TableCell>
                     </TableRow>
@@ -549,35 +608,89 @@ export default function OrdersPage() {
 
       {/* Assign Rider Modal */}
       <Dialog open={assignModalOpen} onOpenChange={setAssignModalOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Assign Rider</DialogTitle>
             <DialogDescription>
-              Select a rider to assign to order #{selectedOrder?.id.slice(0, 8).toUpperCase()}
+              Order #{selectedOrder?.id.slice(0, 8).toUpperCase()} — select any rider.
+              Available riders appear first; busy riders can still be assigned.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 mt-4">
-            {availableRiders?.length === 0 ? (
-              <p className="text-center text-gray-500 py-4">No riders available</p>
+          <div className="overflow-y-auto space-y-2 mt-3 pr-1">
+            {!availableRiders ? (
+              <div className="space-y-2">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse" />
+                ))}
+              </div>
+            ) : availableRiders.length === 0 ? (
+              <p className="text-center text-gray-500 py-4">No riders registered</p>
             ) : (
-              availableRiders?.map((rider: Rider) => (
-                <button
-                  key={rider.id}
-                  onClick={() => handleAssignRiderSubmit(rider.id)}
-                  disabled={assignRiderMutation.isPending}
-                  className="w-full flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:border-[#4CAF50] hover:bg-green-50 transition-colors text-left"
-                >
-                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                    <span className="text-green-600 font-semibold">
-                      {rider.user.name.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="font-medium">{rider.user.name}</p>
-                    <p className="text-sm text-gray-500">{rider.user.phone || 'No phone'}</p>
-                  </div>
-                </button>
-              ))
+              <>
+                {/* Available section */}
+                {availableRiders.filter((r: Rider) => !r.isBusy).length > 0 && (
+                  <p className="text-xs font-semibold text-green-700 uppercase tracking-wide px-1">
+                    Available ({availableRiders.filter((r: Rider) => !r.isBusy).length})
+                  </p>
+                )}
+                {availableRiders.filter((r: Rider) => !r.isBusy).map((rider: Rider) => (
+                  <button
+                    key={rider.id}
+                    onClick={() => handleAssignRiderSubmit(rider.id)}
+                    disabled={assignRiderMutation.isPending}
+                    className="w-full flex items-center gap-3 p-3 border border-green-200 bg-green-50 rounded-lg hover:border-[#4CAF50] hover:bg-green-100 transition-colors text-left"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-green-200 flex items-center justify-center flex-shrink-0">
+                      <span className="text-green-700 font-semibold text-sm">
+                        {rider.user.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900">{rider.user.name}</p>
+                      <p className="text-xs text-gray-500">{rider.user.phone || 'No phone'}</p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <span className="text-xs bg-green-600 text-white px-2 py-0.5 rounded-full">Free</span>
+                      {rider.distKm != null && (
+                        <p className="text-xs text-gray-400 mt-0.5">{rider.distKm} km</p>
+                      )}
+                    </div>
+                  </button>
+                ))}
+
+                {/* Busy section */}
+                {availableRiders.filter((r: Rider) => r.isBusy).length > 0 && (
+                  <p className="text-xs font-semibold text-orange-700 uppercase tracking-wide px-1 mt-3">
+                    On a trip ({availableRiders.filter((r: Rider) => r.isBusy).length}) — admin override
+                  </p>
+                )}
+                {availableRiders.filter((r: Rider) => r.isBusy).map((rider: Rider) => (
+                  <button
+                    key={rider.id}
+                    onClick={() => handleAssignRiderSubmit(rider.id)}
+                    disabled={assignRiderMutation.isPending}
+                    className="w-full flex items-center gap-3 p-3 border border-orange-200 bg-orange-50 rounded-lg hover:border-orange-400 hover:bg-orange-100 transition-colors text-left"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-orange-200 flex items-center justify-center flex-shrink-0">
+                      <span className="text-orange-700 font-semibold text-sm">
+                        {rider.user.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900">{rider.user.name}</p>
+                      <p className="text-xs text-gray-500">{rider.user.phone || 'No phone'}</p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <span className="text-xs bg-orange-500 text-white px-2 py-0.5 rounded-full">
+                        {rider.activeCount} active
+                      </span>
+                      {rider.distKm != null && (
+                        <p className="text-xs text-gray-400 mt-0.5">{rider.distKm} km</p>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </>
             )}
           </div>
         </DialogContent>

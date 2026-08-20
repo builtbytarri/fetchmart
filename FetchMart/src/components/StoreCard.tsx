@@ -13,8 +13,8 @@ export const StoreCard: React.FC<StoreCardProps> = ({ store, onPress }) => {
   return (
     <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.8}>
       <View style={styles.image}>
-        {store.logoUrl ? (
-          <Image source={{ uri: store.logoUrl }} style={styles.image} />
+        {store.imageUrl ? (
+          <Image source={{ uri: store.imageUrl }} style={styles.image} />
         ) : (
           <View style={[styles.image, styles.placeholderImage]}>
             <Ionicons name="storefront" size={40} color={COLORS.textSecondary} />

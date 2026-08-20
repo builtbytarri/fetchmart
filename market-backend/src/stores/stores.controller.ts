@@ -11,6 +11,7 @@ import {
   Inject,
   forwardRef,
 } from '@nestjs/common';
+import { OrderStatus } from '@prisma/client';
 import { StoresService } from './stores.service';
 import { ProductsService } from '../products';
 import { CreateStoreDto, UpdateStoreDto, NearbyQueryDto, CreateCategoryDto, UpdateCategoryDto } from './dto';
@@ -53,6 +54,32 @@ export class StoresController {
     return this.storesService.findNearby(query);
   }
 
+  @Get('featured')
+  async getFeatured() {
+    return this.storesService.getFeatured();
+  }
+
+  @Get('favourites')
+  @UseGuards(JwtAuthGuard)
+  async getFavourites(@CurrentUser() user: TokenPayload) {
+    return this.storesService.getFavourites(user.userId);
+  }
+
+  @Get('favourite-ids')
+  @UseGuards(JwtAuthGuard)
+  async getFavouriteIds(@CurrentUser() user: TokenPayload) {
+    return this.storesService.getFavouriteIds(user.userId);
+  }
+
+  @Post(':storeId/favourite')
+  @UseGuards(JwtAuthGuard)
+  async toggleFavourite(
+    @Param('storeId') storeId: string,
+    @CurrentUser() user: TokenPayload,
+  ) {
+    return this.storesService.toggleFavourite(user.userId, storeId);
+  }
+
   @Get(':storeId')
   async findById(@Param('storeId') storeId: string) {
     return this.storesService.findById(storeId);
@@ -67,6 +94,11 @@ export class StoresController {
     @Body() dto: UpdateStoreDto,
   ) {
     return this.storesService.update(storeId, user.userId, dto);
+  }
+
+  @Get(':storeId/products/suggested')
+  async getSuggestedProducts(@Param('storeId') storeId: string) {
+    return this.productsService.findSuggested(storeId);
   }
 
   @Get(':storeId/products')
@@ -110,5 +142,41 @@ export class StoresController {
     @CurrentUser() user: TokenPayload,
   ) {
     return this.storesService.deleteCategory(categoryId, user.userId);
+  }
+
+  // ── Store order management ─────────────────────────────────────────────────
+
+  /** All orders for this store (excluding CANCELLED by default). */
+  @Get('my/orders')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.STORE)
+  async getMyOrders(
+    @CurrentUser() user: TokenPayload,
+    @Query('status') status?: OrderStatus,
+  ) {
+    return this.storesService.getMyOrders(user.userId, status);
+  }
+
+  /** Accept / mark-preparing / mark-ready for an order. Body: { status } */
+  @Patch('my/orders/:orderId/status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.STORE)
+  async updateOrderStatus(
+    @Param('orderId') orderId: string,
+    @CurrentUser() user: TokenPayload,
+    @Body('status') status: OrderStatus,
+  ) {
+    return this.storesService.updateStoreOrderStatus(orderId, user.userId, status);
+  }
+
+  /** Reject (cancel) an order that the store cannot fulfil. */
+  @Post('my/orders/:orderId/reject')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.STORE)
+  async rejectOrder(
+    @Param('orderId') orderId: string,
+    @CurrentUser() user: TokenPayload,
+  ) {
+    return this.storesService.rejectOrder(orderId, user.userId);
   }
 }

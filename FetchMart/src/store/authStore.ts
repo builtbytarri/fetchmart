@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { User, UserRole } from '../types';
-import { authApi, LoginRequest, RegisterRequest, googleAuth, appleAuth } from '../api';
+import { authApi, LoginRequest, RegisterRequest, googleAuth, appleAuth, notificationsApi } from '../api';
 
 interface AuthState {
   user: User | null;
@@ -15,6 +15,8 @@ interface AuthState {
   logout: () => Promise<void>;
   loadUser: () => Promise<void>;
   clearError: () => void;
+  /** Merge partial updates into the cached user without a round-trip to the server */
+  patchUser: (partial: Partial<User>) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -99,8 +101,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: async () => {
     set({ isLoading: true });
     try {
+      // Deregister push token before logging out so this device stops receiving
+      // notifications for this account.
+      await notificationsApi.clearToken().catch(() => {});
       await authApi.logout();
-      // Clear native Google session too so the next sign-in shows the account picker.
       await googleAuth.signOut();
     } finally {
       set({ user: null, isAuthenticated: false, isLoading: false });
@@ -123,4 +127,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   clearError: () => set({ error: null }),
+
+  patchUser: (partial: Partial<User>) =>
+    set((state) => ({
+      user: state.user ? { ...state.user, ...partial } : state.user,
+    })),
 }));

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -9,8 +9,11 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { DeliveryAddressModal } from '../../components';
+import { usersApi, type SavedAddress } from '../../api/users';
 import { useAuthStore } from '../../store';
 import { COLORS, SPACING } from '../../constants/config';
 
@@ -18,52 +21,162 @@ type Props = {
   navigation: NativeStackNavigationProp<any>;
 };
 
-type Address = {
-  id: string;
-  label: string;
-  address: string;
-  isDefault: boolean;
-};
+function labelIcon(label: string): keyof typeof Ionicons.glyphMap {
+  const normalized = label.toLowerCase();
+  if (normalized === 'home') return 'home';
+  if (normalized === 'work') return 'briefcase';
+  return 'location';
+}
 
 export const SavedAddressesScreen: React.FC<Props> = ({ navigation }) => {
-  const { user } = useAuthStore();
-  const [addresses, setAddresses] = useState<Address[]>(
-    user?.address
-      ? [
-          {
-            id: '1',
-            label: 'Home',
-            address: user.address,
-            isDefault: true,
-          },
-        ]
-      : []
-  );
-  const [isLoading, setIsLoading] = useState(false);
+  const patchUser = useAuthStore((s) => s.patchUser);
+  const [addresses, setAddresses] = useState<SavedAddress[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<SavedAddress | null>(null);
 
-  const handleDeleteAddress = (id: string) => {
-    Alert.alert('Delete Address', 'Are you sure you want to delete this address?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => {
-          setAddresses(addresses.filter((a) => a.id !== id));
-        },
-      },
-    ]);
+  const loadAddresses = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await usersApi.listSavedAddresses();
+      setAddresses(data);
+    } catch {
+      Alert.alert('Error', 'Could not load saved addresses.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadAddresses();
+    }, [loadAddresses]),
+  );
+
+  const handleSetDefault = async (address: SavedAddress) => {
+    if (address.isDefault) return;
+
+    try {
+      await usersApi.updateSavedAddress(address.id, { isDefault: true });
+      await loadAddresses();
+      patchUser({
+        address: address.address,
+        latitude: address.latitude,
+        longitude: address.longitude,
+      });
+    } catch {
+      Alert.alert('Error', 'Could not set default address.');
+    }
   };
 
-  const renderAddress = ({ item }: { item: Address }) => (
+  const openAddModal = () => {
+    setEditingAddress(null);
+    setModalVisible(true);
+  };
+
+  const openEditModal = (address: SavedAddress) => {
+    setEditingAddress(address);
+    setModalVisible(true);
+  };
+
+  const handleSaveAddress = async (data: {
+    address: string;
+    latitude: number;
+    longitude: number;
+    label?: string;
+  }) => {
+    if (!data.label) return;
+
+    setIsSaving(true);
+    try {
+      if (editingAddress) {
+        const updated = await usersApi.updateSavedAddress(editingAddress.id, {
+          label: data.label,
+          address: data.address,
+          latitude: data.latitude,
+          longitude: data.longitude,
+        });
+        await loadAddresses();
+        if (updated.isDefault) {
+          patchUser({
+            address: updated.address,
+            latitude: updated.latitude,
+            longitude: updated.longitude,
+          });
+        }
+      } else {
+        const created = await usersApi.createSavedAddress({
+          label: data.label,
+          address: data.address,
+          latitude: data.latitude,
+          longitude: data.longitude,
+          isDefault: addresses.length === 0,
+        });
+        await loadAddresses();
+        if (created.isDefault) {
+          patchUser({
+            address: created.address,
+            latitude: created.latitude,
+            longitude: created.longitude,
+          });
+        }
+      }
+      setModalVisible(false);
+      setEditingAddress(null);
+    } catch (err: any) {
+      Alert.alert('Error', err.response?.data?.message ?? 'Could not save address.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteAddress = (address: SavedAddress) => {
+    Alert.alert(
+      'Delete Address',
+      `Remove "${address.label}" from your saved addresses?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await usersApi.deleteSavedAddress(address.id);
+              const remaining = await usersApi.listSavedAddresses();
+              setAddresses(remaining);
+
+              if (address.isDefault) {
+                const nextDefault = remaining.find((a) => a.isDefault);
+                if (nextDefault) {
+                  patchUser({
+                    address: nextDefault.address,
+                    latitude: nextDefault.latitude,
+                    longitude: nextDefault.longitude,
+                  });
+                } else {
+                  patchUser({ address: null, latitude: null, longitude: null });
+                }
+              }
+            } catch {
+              Alert.alert('Error', 'Could not delete address.');
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const renderAddress = ({ item }: { item: SavedAddress }) => (
     <View style={styles.addressCard}>
       <View style={styles.addressIcon}>
-        <Ionicons
-          name={item.label === 'Home' ? 'home' : item.label === 'Work' ? 'briefcase' : 'location'}
-          size={20}
-          color={COLORS.primary}
-        />
+        <Ionicons name={labelIcon(item.label)} size={20} color={COLORS.primary} />
       </View>
-      <View style={styles.addressInfo}>
+      <TouchableOpacity
+        style={styles.addressInfo}
+        onPress={() => handleSetDefault(item)}
+        activeOpacity={0.75}
+      >
         <View style={styles.addressHeader}>
           <Text style={styles.addressLabel}>{item.label}</Text>
           {item.isDefault && (
@@ -75,19 +188,29 @@ export const SavedAddressesScreen: React.FC<Props> = ({ navigation }) => {
         <Text style={styles.addressText} numberOfLines={2}>
           {item.address}
         </Text>
-      </View>
-      <TouchableOpacity
-        style={styles.deleteButton}
-        onPress={() => handleDeleteAddress(item.id)}
-      >
-        <Ionicons name="trash-outline" size={20} color={COLORS.error} />
+        {!item.isDefault && (
+          <Text style={styles.setDefaultHint}>Tap to set as default</Text>
+        )}
       </TouchableOpacity>
+      <View style={styles.actions}>
+        <TouchableOpacity
+          style={styles.actionBtn}
+          onPress={() => openEditModal(item)}
+        >
+          <Ionicons name="create-outline" size={20} color={COLORS.textSecondary} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.actionBtn}
+          onPress={() => handleDeleteAddress(item)}
+        >
+          <Ionicons name="trash-outline" size={20} color={COLORS.error} />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
@@ -111,22 +234,37 @@ export const SavedAddressesScreen: React.FC<Props> = ({ navigation }) => {
             <View style={styles.emptyContainer}>
               <Ionicons name="location-outline" size={60} color={COLORS.textSecondary} />
               <Text style={styles.emptyText}>No saved addresses</Text>
-              <Text style={styles.emptySubtext}>Add an address to get started</Text>
+              <Text style={styles.emptySubtext}>
+                Add Home, Work, or other delivery spots for faster checkout
+              </Text>
             </View>
           }
         />
       )}
 
-      {/* Add Address Button */}
       <View style={styles.bottomBar}>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => Alert.alert('Coming Soon', 'Add address feature coming soon!')}
-        >
+        <TouchableOpacity style={styles.addButton} onPress={openAddModal}>
           <Ionicons name="add" size={20} color={COLORS.white} />
           <Text style={styles.addButtonText}>Add New Address</Text>
         </TouchableOpacity>
       </View>
+
+      <DeliveryAddressModal
+        visible={modalVisible}
+        onClose={() => {
+          setModalVisible(false);
+          setEditingAddress(null);
+        }}
+        onConfirm={handleSaveAddress}
+        initialAddress={editingAddress?.address ?? ''}
+        initialLatitude={editingAddress?.latitude}
+        initialLongitude={editingAddress?.longitude}
+        initialLabel={editingAddress?.label ?? 'Home'}
+        showLabelPicker
+        confirmLoading={isSaving}
+        title={editingAddress ? 'Edit Address' : 'Add New Address'}
+        confirmButtonText={editingAddress ? 'Save address' : 'Add address'}
+      />
     </SafeAreaView>
   );
 };
@@ -179,6 +317,7 @@ const styles = StyleSheet.create({
   addressInfo: {
     flex: 1,
     marginLeft: SPACING.sm,
+    marginRight: SPACING.xs,
   },
   addressHeader: {
     flexDirection: 'row',
@@ -205,15 +344,28 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.textSecondary,
     marginTop: 2,
+    lineHeight: 18,
   },
-  deleteButton: {
+  setDefaultHint: {
+    fontSize: 11,
+    color: COLORS.primary,
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  actionBtn: {
     padding: SPACING.xs,
+    marginLeft: 2,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: SPACING.xl * 2,
+    paddingHorizontal: SPACING.lg,
   },
   emptyText: {
     fontSize: 18,
@@ -225,6 +377,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textSecondary,
     marginTop: 4,
+    textAlign: 'center',
+    lineHeight: 20,
   },
   bottomBar: {
     backgroundColor: COLORS.white,

@@ -44,6 +44,15 @@ export class AppConfigService {
     };
   }
 
+  getFlutterwaveConfig() {
+    return {
+      secretKey: this.configService.get<string>('FLUTTERWAVE_SECRET_KEY')!,
+      publicKey: this.configService.get<string>('FLUTTERWAVE_PUBLIC_KEY')!,
+      webhookHash: this.configService.get<string>('FLUTTERWAVE_WEBHOOK_HASH')!,
+    };
+  }
+
+  /** @deprecated Korah Pay — kept for reference, no longer the active provider */
   getPaymentConfig() {
     return {
       korahPayPublicKey: this.configService.get<string>('KORAH_PUBLIC_KEY'),
@@ -59,12 +68,46 @@ export class AppConfigService {
     };
   }
 
-  getR2Config() {
+  getSmsConfig() {
     return {
-      accountId: this.configService.get<string>('R2_ACCOUNT_ID'),
-      accessKey: this.configService.get<string>('R2_ACCESS_KEY'),
-      secretKey: this.configService.get<string>('R2_SECRET_KEY'),
-      bucketName: this.configService.get<string>('R2_BUCKET_NAME'),
+      // 'mock' logs the code; 'termii' sends for real. Defaults to mock so a
+      // misconfigured environment never silently burns prepaid credits.
+      provider: this.configService.get<string>('SMS_PROVIDER') ?? 'mock',
+      apiKey: this.configService.get<string>('TERMII_API_KEY'),
+      senderId: this.configService.get<string>('TERMII_SENDER_ID'),
+      // 'dnd' is required to reach Nigerian numbers with Do-Not-Disturb on.
+      channel: this.configService.get<string>('TERMII_CHANNEL') ?? 'dnd',
+      baseUrl: this.configService.get<string>('TERMII_BASE_URL'),
+      testNumbers: this.parseTestNumbers(
+        this.configService.get<string>('OTP_TEST_NUMBERS'),
+      ),
+    };
+  }
+
+  /**
+   * Fixed-code numbers that bypass the SMS provider entirely.
+   *
+   * Our Termii sender ID is cleared for Nigeria only, so a reviewer or tester
+   * on a foreign number would never receive a code and could not get past the
+   * registration screen. These numbers always "receive" a preset code.
+   *
+   * Format: "2348000000000:123456,15550100:123456"
+   */
+  private parseTestNumbers(raw?: string): Map<string, string> {
+    const map = new Map<string, string>();
+    if (!raw) return map;
+    for (const pair of raw.split(',')) {
+      const [number, code] = pair.split(':').map((p) => p.trim());
+      if (number && code) map.set(number.replace(/\D/g, ''), code);
+    }
+    return map;
+  }
+
+  getCloudinaryConfig() {
+    return {
+      cloudName: this.configService.get<string>('CLOUDINARY_CLOUD_NAME'),
+      apiKey: this.configService.get<string>('CLOUDINARY_API_KEY'),
+      apiSecret: this.configService.get<string>('CLOUDINARY_API_SECRET'),
     };
   }
 

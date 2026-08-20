@@ -1,1 +1,1 @@
-export * from './korah-pay.provider';
+export * from './flutterwave.provider';

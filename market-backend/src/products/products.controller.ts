@@ -6,7 +6,6 @@ import {
   Delete,
   Body,
   Param,
-  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
@@ -31,6 +30,21 @@ export class ProductsController {
     @Body() dto: CreateProductDto,
   ) {
     return this.productsService.create(user.userId, dto);
+  }
+
+  @Get(':productId/similar')
+  async findSimilar(@Param('productId') productId: string) {
+    return this.productsService.findSimilar(productId);
+  }
+
+  @Patch(':productId/toggle-suggested')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.STORE)
+  async toggleSuggested(
+    @Param('productId') productId: string,
+    @CurrentUser() user: TokenPayload,
+  ) {
+    return this.productsService.toggleSuggested(productId, user.userId);
   }
 
   @Get(':productId')

@@ -211,20 +211,19 @@ export default function ActivityPage() {
         ) : (
           <>
             <QuickStatCard
-              title="Today's Orders"
+              title="Total Orders"
               value={dashboardData?.totalOrders || 0}
-              change="+12% from yesterday"
               icon={ShoppingCart}
               color="bg-blue-500"
             />
             <QuickStatCard
-              title="Active Stores"
+              title="Total Stores"
               value={dashboardData?.totalStores || 0}
               icon={Store}
               color="bg-purple-500"
             />
             <QuickStatCard
-              title="Online Riders"
+              title="Registered Riders"
               value={dashboardData?.totalRiders || 0}
               icon={Bike}
               color="bg-green-500"
@@ -259,9 +258,9 @@ export default function ActivityPage() {
                   className="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary w-[200px]"
                 />
               </div>
-              {/* Filter */}
+              {/* Filter — only 'all' and 'order' have data today */}
               <div className="flex bg-gray-100 rounded-lg p-1">
-                {(['all', 'order', 'store', 'rider'] as const).map((type) => (
+                {(['all', 'order'] as const).map((type) => (
                   <button
                     key={type}
                     onClick={() => setFilter(type)}
@@ -269,7 +268,7 @@ export default function ActivityPage() {
                       filter === type ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
-                    {type === 'all' ? 'All' : type + 's'}
+                    {type === 'all' ? 'All' : 'Orders'}
                   </button>
                 ))}
               </div>
