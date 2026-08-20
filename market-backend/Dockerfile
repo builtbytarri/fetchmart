@@ -38,6 +38,9 @@ COPY --from=builder --chown=app:app /app/node_modules ./node_modules
 COPY --from=builder --chown=app:app /app/dist        ./dist
 COPY --from=builder --chown=app:app /app/prisma      ./prisma
 COPY --from=builder --chown=app:app /app/package.json ./package.json
+# Prisma 7 reads the datasource URL from this file, not from schema.prisma —
+# without it `prisma migrate deploy` inside the container has no database URL.
+COPY --from=builder --chown=app:app /app/prisma.config.ts ./prisma.config.ts
 
 USER app
 EXPOSE 3000
