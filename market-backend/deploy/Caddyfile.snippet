@@ -5,6 +5,10 @@
 # Caddy obtains and renews the certificate automatically; there is no certbot
 # step. `fetchmart-api` is the container name, resolved over the shared `web`
 # Docker network.
+#
+# Access logs go to stdout, which `docker logs hirracv-caddy-1` shows. A file
+# sink is deliberately avoided: the Caddy container mounts no log volume, so
+# anything written to disk would vanish on the next restart.
 
 api.fetchmart.com.ng {
 	reverse_proxy fetchmart-api:3000
@@ -13,10 +17,4 @@ api.fetchmart.com.ng {
 	# transparently, so no extra config is required for /socket.io.
 
 	encode gzip
-
-	log {
-		output file /var/log/caddy/fetchmart-access.log
-		roll_size 10MB
-		roll_keep 5
-	}
 }
