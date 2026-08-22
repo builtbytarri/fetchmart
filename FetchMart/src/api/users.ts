@@ -95,6 +95,12 @@ export const usersApi = {
     return response.data;
   },
 
+  /** Permanent account deletion (App Store Guideline 5.1.1(v)). */
+  deleteAccount: async (): Promise<{ deleted: boolean }> => {
+    const response = await api.delete<{ deleted: boolean }>('/users/me');
+    return response.data;
+  },
+
   deleteSavedAddress: async (id: string): Promise<void> => {
     await api.delete(`/users/me/addresses/${id}`);
   },

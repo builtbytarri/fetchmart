@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
+import { AccountStatus, OrderStatus, UserStatus } from '@prisma/client';
 import { PrismaService } from '../database';
 import {
   UpdateUserDto,
@@ -246,5 +252,114 @@ export class UsersService {
     }
 
     return { success: true };
+  }
+
+  /**
+   * Permanent, user-initiated account deletion (App Store Guideline 5.1.1(v)).
+   *
+   * Personal data is erased or anonymised in place rather than the row being
+   * dropped: orders, ledger entries and settlements reference the user and are
+   * financial records we are required to keep. What remains cannot identify
+   * the person — a scrambled email, no name, no phone, no addresses, no bank
+   * account, no saved cards, no OAuth links — and the account can never be
+   * signed into again.
+   */
+  async deleteMyAccount(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { store: { select: { id: true } }, rider: { select: { id: true } } },
+    });
+    if (!user) throw new NotFoundException('User not found');
+
+    // Refuse while money is still in motion. A paid order mid-delivery needs
+    // its customer, store or rider to exist in a resolvable state; deleting
+    // now would strand a refund or a payout.
+    const LIVE: OrderStatus[] = [
+      OrderStatus.PAID,
+      OrderStatus.STORE_ACCEPTED,
+      OrderStatus.PREPARING,
+      OrderStatus.READY,
+      OrderStatus.ASSIGNED,
+      OrderStatus.PICKED_UP,
+      OrderStatus.EN_ROUTE,
+      OrderStatus.ARRIVED,
+    ];
+    const liveOrders = await this.prisma.order.count({
+      where: {
+        status: { in: LIVE },
+        OR: [
+          { customerUserId: userId },
+          ...(user.store ? [{ storeId: user.store.id }] : []),
+          ...(user.rider ? [{ riderId: user.rider.id }] : []),
+        ],
+      },
+    });
+    if (liveOrders > 0) {
+      throw new BadRequestException(
+        'You have an order in progress. Please wait for it to complete (or cancel it) before deleting your account.',
+      );
+    }
+
+    await this.prisma.$transaction([
+      // Sessions and sign-in methods — nothing can authenticate as this user again.
+      this.prisma.refreshToken.deleteMany({ where: { userId } }),
+      this.prisma.passwordResetToken.deleteMany({ where: { userId } }),
+      this.prisma.oAuthAccount.deleteMany({ where: { userId } }),
+      // Stored personal data.
+      this.prisma.savedAddress.deleteMany({ where: { userId } }),
+      this.prisma.paymentToken.deleteMany({ where: { userId } }),
+      this.prisma.bankAccount.deleteMany({ where: { userId } }),
+      this.prisma.favourite.deleteMany({ where: { userId } }),
+      ...(user.phone
+        ? [this.prisma.phoneOtp.deleteMany({ where: { phone: user.phone } })]
+        : []),
+      // Their storefront / rider profile, if any (soft delete — orders refer to them).
+      ...(user.store
+        ? [
+            this.prisma.store.update({
+              where: { id: user.store.id },
+              data: {
+                status: AccountStatus.SUSPENDED,
+                deletedAt: new Date(),
+                isOpen: false,
+                isVerified: false,
+              },
+            }),
+          ]
+        : []),
+      ...(user.rider
+        ? [
+            this.prisma.rider.update({
+              where: { id: user.rider.id },
+              data: {
+                status: AccountStatus.SUSPENDED,
+                deletedAt: new Date(),
+                isAvailable: false,
+              },
+            }),
+          ]
+        : []),
+      // Finally, anonymise the user row itself.
+      this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          email: `deleted-${userId}@deleted.invalid`,
+          name: 'Deleted User',
+          phone: null,
+          address: null,
+          latitude: null,
+          longitude: null,
+          passwordHash: null,
+          pushToken: null,
+          status: UserStatus.SUSPENDED,
+          notifyPush: false,
+          notifyOrderUpdates: false,
+          notifyPromotions: false,
+          notifyNewStores: false,
+        },
+      }),
+    ]);
+
+    return { deleted: true };
   }
 }

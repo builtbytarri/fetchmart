@@ -18,6 +18,12 @@ interface TokenPayload {
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  /** User-initiated account deletion (App Store Guideline 5.1.1(v)). */
+  @Delete('me')
+  async deleteMyAccount(@CurrentUser() user: TokenPayload) {
+    return this.usersService.deleteMyAccount(user.userId);
+  }
+
   @Get('me')
   async getMe(@CurrentUser() user: TokenPayload) {
     return this.usersService.findById(user.userId);

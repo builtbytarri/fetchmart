@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuthStore } from '../../store';
+import { usersApi } from '../../api';
 import { COLORS, SPACING } from '../../constants/config';
 
 type Props = {
@@ -30,6 +31,42 @@ export const StoreProfileScreen: React.FC<Props> = ({ navigation }) => {
       ]
     );
   };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'This permanently deletes your account and personal data. Order history is kept for legal records but can no longer identify you. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            // Second confirmation — deletion is irreversible.
+            Alert.alert('Are you sure?', 'Your account will be permanently deleted.', [
+              { text: 'Keep my account', style: 'cancel' },
+              {
+                text: 'Delete permanently',
+                style: 'destructive',
+                onPress: async () => {
+                  try {
+                    await usersApi.deleteAccount();
+                    await logout();
+                  } catch (err: any) {
+                    Alert.alert(
+                      'Could not delete account',
+                      err?.response?.data?.message || 'Please try again later.',
+                    );
+                  }
+                },
+              },
+            ]);
+          },
+        },
+      ],
+    );
+  };
+
 
   const menuItems = [
     { icon: 'person-outline', label: 'Edit Profile', screen: 'EditProfile' },
@@ -84,6 +121,9 @@ export const StoreProfileScreen: React.FC<Props> = ({ navigation }) => {
           <Ionicons name="log-out-outline" size={22} color={COLORS.error} />
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
+      <TouchableOpacity style={styles.deleteAccountButton} onPress={handleDeleteAccount}>
+        <Text style={styles.deleteAccountText}>Delete Account</Text>
+      </TouchableOpacity>
 
         <View style={{ height: 100 }} />
       </ScrollView>
@@ -194,5 +234,16 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: COLORS.error,
     marginLeft: SPACING.sm,
+  },
+  deleteAccountButton: {
+    alignItems: 'center',
+    paddingVertical: 12,
+    marginTop: 4,
+    marginBottom: SPACING.lg,
+  },
+  deleteAccountText: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    textDecorationLine: 'underline',
   },
 });

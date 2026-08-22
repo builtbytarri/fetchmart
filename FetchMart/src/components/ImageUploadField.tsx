@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING } from '../constants/config';
 import { storageApi, UploadFolder } from '../api';
@@ -39,6 +38,10 @@ export const ImageUploadField: React.FC<Props> = ({
   const [uploading, setUploading] = useState(false);
 
   const pick = async () => {
+    // Loaded lazily so the module is only required when the user actually
+    // opens the picker. This keeps app startup independent of the native
+    // module being present (older dev clients) and defers the cost otherwise.
+    const ImagePicker = await import('expo-image-picker');
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
       Alert.alert(
