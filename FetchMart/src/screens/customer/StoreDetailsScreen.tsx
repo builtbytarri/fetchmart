@@ -19,6 +19,7 @@ import {
   useStoreCacheStore,
   getCachedProducts,
 } from '../../store/storeCacheStore';
+import { AppImage } from '../../components';
 import { COLORS, SPACING } from '../../constants/config';
 import { CustomerStackParamList } from '../../navigation/types';
 
@@ -36,7 +37,7 @@ const ProductCard: React.FC<{
   <TouchableOpacity style={styles.productCard} onPress={onPress} activeOpacity={0.8}>
     <View style={styles.productImageWrap}>
       {product.imageUrl ? (
-        <Image source={{ uri: product.imageUrl }} style={styles.productImage} />
+        <AppImage uri={product.imageUrl} style={styles.productImage} />
       ) : (
         <View style={styles.productImagePlaceholder}>
           <Ionicons name="cube-outline" size={34} color={COLORS.textSecondary} />
@@ -153,7 +154,7 @@ export const StoreDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
         {/* ── Hero ──────────────────────────────────────────────────── */}
         <View style={styles.hero}>
           {store.imageUrl ? (
-            <Image source={{ uri: store.imageUrl }} style={styles.heroImage} />
+            <AppImage uri={store.imageUrl} style={styles.heroImage} />
           ) : (
             <View style={styles.heroPlaceholder}>
               <Ionicons name="storefront" size={64} color={COLORS.textSecondary} />

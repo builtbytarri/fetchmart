@@ -10,7 +10,7 @@ import {
   ScrollView,
   TextInput,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { AddressAutocomplete } from './AddressAutocomplete';
 import { Button } from './Button';
@@ -63,6 +63,9 @@ export const DeliveryAddressModal: React.FC<DeliveryAddressModalProps> = ({
   title = 'Change Delivery Address',
   confirmButtonText = 'Use this address',
 }) => {
+  // Inside a native Modal the safe-area context can report zero top inset,
+  // which parks the close button underneath the clock. Pad explicitly.
+  const insets = useSafeAreaInsets();
   const [pendingAddress, setPendingAddress] = useState<AddressData | null>(null);
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [mapMode, setMapMode] = useState<MapMode>('gps');
@@ -156,7 +159,10 @@ export const DeliveryAddressModal: React.FC<DeliveryAddressModalProps> = ({
           onBack={() => setShowMapPicker(false)}
         />
       ) : (
-        <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <SafeAreaView
+          style={[styles.container, { paddingTop: Math.max(insets.top, 20) }]}
+          edges={['bottom']}
+        >
           <KeyboardAvoidingView
             style={styles.flex}
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}

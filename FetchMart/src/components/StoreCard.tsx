@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING } from '../constants/config';
+import { AppImage } from './AppImage';
 import { Store } from '../types';
 
 interface StoreCardProps {
@@ -14,7 +15,7 @@ export const StoreCard: React.FC<StoreCardProps> = ({ store, onPress }) => {
     <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.8}>
       <View style={styles.image}>
         {store.imageUrl ? (
-          <Image source={{ uri: store.imageUrl }} style={styles.image} />
+          <AppImage uri={store.imageUrl} style={styles.image} />
         ) : (
           <View style={[styles.image, styles.placeholderImage]}>
             <Ionicons name="storefront" size={40} color={COLORS.textSecondary} />

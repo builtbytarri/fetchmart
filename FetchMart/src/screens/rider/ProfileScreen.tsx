@@ -249,13 +249,20 @@ const styles = StyleSheet.create({
   logoutText: { fontSize: 16, fontWeight: '500', color: COLORS.error, marginLeft: SPACING.sm },
   deleteAccountButton: {
     alignItems: 'center',
-    paddingVertical: 12,
-    marginTop: 4,
-    marginBottom: SPACING.lg,
+    justifyContent: 'center',
+    minHeight: 52,
+    marginTop: SPACING.md,
+    marginHorizontal: SPACING.lg,
+    // Clear the home indicator comfortably — this sits at the very bottom.
+    marginBottom: SPACING.xl * 2,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.error,
+    backgroundColor: '#FDECEE',
   },
   deleteAccountText: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    textDecorationLine: 'underline',
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.error,
   },
 });

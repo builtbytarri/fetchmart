@@ -20,6 +20,7 @@ import {
   getCachedProduct,
   getSimilarFromCache,
 } from '../../store/storeCacheStore';
+import { AppImage } from '../../components';
 import { COLORS, SPACING } from '../../constants/config';
 import { UNIT_LABEL } from '../../types';
 import { formatQty, quickPicks, roundQty, stepFor } from '../../utils/quantity';
@@ -38,7 +39,7 @@ const SimilarCard: React.FC<{
   <TouchableOpacity style={styles.similarCard} onPress={onPress} activeOpacity={0.8}>
     <View style={styles.similarImageWrap}>
       {item.imageUrl ? (
-        <Image source={{ uri: item.imageUrl }} style={styles.similarImage} />
+        <AppImage uri={item.imageUrl} style={styles.similarImage} />
       ) : (
         <View style={styles.similarImagePlaceholder}>
           <Ionicons name="cube-outline" size={28} color={COLORS.textSecondary} />
@@ -169,7 +170,7 @@ export const ProductDetailsScreen: React.FC<Props> = ({ navigation, route }) => 
         {/* ── Product image ──────────────────────────────────────────── */}
         <View style={styles.imageContainer}>
           {product.imageUrl ? (
-            <Image source={{ uri: product.imageUrl }} style={styles.productImage} />
+            <AppImage uri={product.imageUrl} style={styles.productImage} />
           ) : (
             <View style={styles.productImagePlaceholder}>
               <Ionicons name="cube-outline" size={80} color={COLORS.textSecondary} />

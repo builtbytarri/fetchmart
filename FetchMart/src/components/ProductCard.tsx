@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING } from '../constants/config';
+import { AppImage } from './AppImage';
 import { formatUnitPrice } from '../utils/quantity';
 import { Product } from '../types';
 
@@ -24,7 +25,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.8}>
       <View style={styles.imageContainer}>
         {product.imageUrl ? (
-          <Image source={{ uri: product.imageUrl }} style={styles.image} />
+          <AppImage uri={product.imageUrl} style={styles.image} />
         ) : (
           <View style={[styles.image, styles.placeholderImage]}>
             <Ionicons name="cube-outline" size={32} color={COLORS.textSecondary} />

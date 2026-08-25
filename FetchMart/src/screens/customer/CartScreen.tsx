@@ -303,7 +303,22 @@ export const CartScreen: React.FC<Props> = ({ navigation }) => {
         {/* Delivery Address row */}
         <TouchableOpacity
           style={styles.addressRow}
-          onPress={() => setShowAddressPicker(true)}
+          onPress={() => {
+            // Delivery addresses belong to an account; the picker would only
+            // throw the value away for a guest.
+            if (useAuthStore.getState().isGuest) {
+              Alert.alert(
+                'Sign in to set a delivery address',
+                'Create a free account or sign in to save where your orders should go.',
+                [
+                  { text: 'Not now', style: 'cancel' },
+                  { text: 'Sign in', onPress: () => useAuthStore.getState().exitGuest() },
+                ],
+              );
+              return;
+            }
+            setShowAddressPicker(true);
+          }}
           activeOpacity={0.75}
         >
           <View style={styles.addressIcon}>

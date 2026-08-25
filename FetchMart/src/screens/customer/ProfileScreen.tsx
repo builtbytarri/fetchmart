@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  ScrollView,
   View,
   Text,
   StyleSheet,
@@ -119,6 +120,7 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
         </View>
       </View>
 
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
       <View style={styles.menuContainer}>
         {menuItems.map((item, index) => (
           <TouchableOpacity
@@ -140,6 +142,7 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       <TouchableOpacity style={styles.deleteAccountButton} onPress={handleDeleteAccount}>
         <Text style={styles.deleteAccountText}>Delete Account</Text>
       </TouchableOpacity>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -231,13 +234,20 @@ const styles = StyleSheet.create({
   },
   deleteAccountButton: {
     alignItems: 'center',
-    paddingVertical: 12,
-    marginTop: 4,
-    marginBottom: SPACING.lg,
+    justifyContent: 'center',
+    minHeight: 52,
+    marginTop: SPACING.md,
+    marginHorizontal: SPACING.lg,
+    // Clear the home indicator comfortably — this sits at the very bottom.
+    marginBottom: SPACING.xl * 2,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.error,
+    backgroundColor: '#FDECEE',
   },
   deleteAccountText: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    textDecorationLine: 'underline',
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.error,
   },
 });

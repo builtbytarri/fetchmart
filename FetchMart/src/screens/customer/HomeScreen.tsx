@@ -20,6 +20,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { storesApi } from '../../api';
 import { Store } from '../../types';
 import { useAuthStore, useFavouritesStore } from '../../store';
+import { AppImage } from '../../components';
 import { COLORS, SPACING } from '../../constants/config';
 import { SearchScreen } from './SearchScreen';
 
@@ -169,21 +170,19 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     // Use the user's saved delivery location; fall back to central Lagos if not set
     const lat = user?.latitude ?? 6.5244;
     const lng = user?.longitude ?? 3.3792;
-    try {
-      const [nearby, favs, featured] = await Promise.all([
-        storesApi.getNearby({ latitude: lat, longitude: lng, radius: 20 }),
-        storesApi.getFavourites().catch(() => [] as Store[]),
-        storesApi.getFeatured().catch(() => [] as Store[]),
-      ]);
-      setStores(nearby);
-      setFavouriteStores(favs);
-      setFeaturedStores(featured);
-    } catch (err) {
-      console.error('Failed to load stores:', err);
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
+    // Each section renders the moment its own data lands, instead of the
+    // whole screen waiting for the slowest request. Nearby is the primary
+    // content, so its arrival (or failure) is what ends the loading state.
+    const nearbyP = storesApi
+      .getNearby({ latitude: lat, longitude: lng, radius: 20 })
+      .then(setStores)
+      .catch((err) => console.error('Failed to load stores:', err));
+    storesApi.getFavourites().then(setFavouriteStores).catch(() => {});
+    storesApi.getFeatured().then(setFeaturedStores).catch(() => {});
+
+    await nearbyP;
+    setIsLoading(false);
+    setIsRefreshing(false);
   };
 
   useEffect(() => {
@@ -197,7 +196,8 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     }, [user?.latitude, user?.longitude]),
   );
 
-  const firstName = user?.name?.split(' ')[0] ?? 'there';
+  const isGuest = useAuthStore((st) => st.isGuest);
+  const firstName = isGuest ? 'Guest' : (user?.name?.split(' ')[0] ?? 'there');
   const initial = (user?.name?.[0] ?? 'U').toUpperCase();
 
   // ── Store card ──────────────────────────────────────────────────────────────
@@ -213,13 +213,19 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
       >
         {/* Image / placeholder area */}
         <View style={[styles.cardImageArea, { backgroundColor: palette.bg }]}>
-          {/* Large store initial — editorial identity placeholder */}
-          <Text style={[styles.cardInitialBg, { color: palette.fg, opacity: 0.12 }]}>
-            {storeInitial}
-          </Text>
-          <View style={[styles.cardIconCircle, { backgroundColor: palette.bg }]}>
-            <Ionicons name="storefront" size={28} color={palette.fg} />
-          </View>
+          {store.imageUrl ? (
+            <AppImage uri={store.imageUrl} style={StyleSheet.absoluteFillObject} />
+          ) : (
+            <>
+              {/* Large store initial — editorial identity placeholder */}
+              <Text style={[styles.cardInitialBg, { color: palette.fg, opacity: 0.12 }]}>
+                {storeInitial}
+              </Text>
+              <View style={[styles.cardIconCircle, { backgroundColor: palette.bg }]}>
+                <Ionicons name="storefront" size={28} color={palette.fg} />
+              </View>
+            </>
+          )}
           <LinearGradient
             colors={['transparent', 'rgba(0,0,0,0.18)']}
             style={StyleSheet.absoluteFillObject}
