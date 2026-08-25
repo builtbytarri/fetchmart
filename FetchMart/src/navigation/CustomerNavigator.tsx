@@ -13,6 +13,8 @@ import {
   OrdersScreen,
   ProfileScreen,
 } from '../screens/customer';
+import { GuestGate } from '../components';
+import { useAuthStore } from '../store';
 import {
   EditProfileScreen,
   SavedAddressesScreen,
@@ -27,6 +29,17 @@ import { FloatingTabBar } from '../components/FloatingTabBar';
 const Stack = createNativeStackNavigator<CustomerStackParamList>();
 const Tab = createBottomTabNavigator<CustomerTabParamList>();
 
+/**
+ * Orders is account-based; guests see a sign-in prompt instead. The switch
+ * lives here (not inside OrdersScreen) so the screen's hooks never run in
+ * guest mode and hook order stays stable across the transition.
+ */
+const OrdersTab: React.FC<any> = (props) => {
+  const isGuest = useAuthStore((st) => st.isGuest);
+  if (isGuest) return <GuestGate feature="orders" icon="receipt-outline" />;
+  return <OrdersScreen {...props} />;
+};
+
 const CustomerTabs: React.FC = () => {
   return (
     <Tab.Navigator
@@ -36,7 +49,7 @@ const CustomerTabs: React.FC = () => {
       }}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Orders" component={OrdersScreen} />
+      <Tab.Screen name="Orders" component={OrdersTab} />
       <Tab.Screen name="Cart" component={CartScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>

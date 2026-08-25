@@ -1,3 +1,5 @@
+import { join } from 'node:path';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
@@ -5,7 +7,14 @@ import { AppConfigService } from './config';
 import { GlobalExceptionFilter } from './common/filters';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Self-hosted catalogue images (public/). Served from our own domain so no
+  // third-party image host can break the app.
+  app.useStaticAssets(join(process.cwd(), 'public'), {
+    prefix: '/static/',
+    maxAge: '7d',
+  });
 
   const configService = app.get(AppConfigService);
 

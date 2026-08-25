@@ -1,0 +1,330 @@
+{
+ "products/garri.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Garri",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/a/ab/Garri_flour.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/cerelac.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Baby_food",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/8/8d/US_Navy_100201-N-2100S-082_ailors_from_the_Nimitz-class_aircraft_carrier_USS_Carl_Vinson_%28CVN_70%29_move_jars_of_baby_food_onto_an_aid_truck.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/baby-lotion.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Lotion",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/6/65/Banff_Centre_lotion_and_shampoo.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/diapers.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Diaper",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/d/d8/Disposablediaper.JPG?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/beef.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Beef",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/6/60/Standing-rib-roast.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/minced-beef.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Ground_beef",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/d/d1/Hackfleisch-1.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/liver.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Liver_as_food",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/2/2f/Pig%27s_liver_with_sauteed_onion.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/bournvita.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Hot_chocolate",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/9/9c/After_The_St._Patrick%27s_Parade_Late_Lunch_%40_Lemon%2C_Dawson_Street%2C_Dublin%2C_Rep._Of_Ireland_A_Fine_Tradition%21_%286992614913%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/tea.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Tea",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/d/d3/Longjing_tea_steeping_in_gaiwan.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/milo.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Chocolate_milk",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Chocolate_milk.JPG/3840px-Chocolate_milk.JPG?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+ },
+ "products/coffee.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Instant_coffee",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/2/26/Instant_coffee.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/milk.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Evaporated_milk",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/0/0f/Dosenmilch.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/chicken-breast.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Chicken_as_food",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/5/57/Chickens_in_market.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/chicken-wings.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Buffalo_wing",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/5/51/Buffalo_wings-01.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/whole-chicken.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Roast_chicken",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/d/d9/Max%27s_Roasted_Chicken_-_Evan_Swigart.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/gizzard.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Gizzard",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/5/5a/Gizzard_of_Chicken.JPG?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/broom.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Broom",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/b/b0/BroomsforSale.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/cloths.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Textile",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Warp_in_Progress.jpg/1280px-Warp_in_Progress.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+ },
+ "products/mop.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Mop",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/4/4c/Mop%2C_three_different_mop_handles.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/curry.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Curry_powder",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/6/60/Curry_powder_in_the_spice-bazaar_in_Istanbul.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/groundnut-oil.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Peanut_oil",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/0/0c/4_gallons_of_peanut_oil.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/bouillon.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Bouillon_cube",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/f/f5/Br%C3%BChw%C3%BCrfel-1.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/salt.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Salt",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/7/7c/Rock_salt_%28halitite%29_%28Billianwala_Salt_Member%2C_Salt_Range_Formation%2C_Ediacaran_to_Lower_Cambrian%3B_Khewra_Salt_Mine%2C_Salt_Range%2C_Pakistan%29_14.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/tomato-paste.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Tomato_paste",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/e/e8/Tomato_paste_on_spoon.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/bay-leaves.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Bay_leaf",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/a/a8/Bay_Leaves.JPG?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/scent-leaf.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Ocimum_gratissimum",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/a/aa/Starr_030202-0053_Ocimum_gratissimum.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/thyme.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Thyme",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Thyme-Bundle.jpg/3840px-Thyme-Bundle.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+ },
+ "products/prawns.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Prawn",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/9/98/Penaeus_monodon.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/catfish.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Catfish",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/d/d8/Siluriformes.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/tilapia.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Tilapia",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/b/b3/Oreochromis-niloticus-Nairobi.JPG?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/mackerel.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Atlantic_mackerel",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/7/7f/Scomber_scombrus_217326414.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/banana.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Banana",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/d/de/Bananavarieties.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/mango.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Mango",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/Mangos_-_single_and_halved.jpg/3840px-Mangos_-_single_and_halved.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+ },
+ "products/pawpaw.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Papaya",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/8/84/Carica_papaya_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-029.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/pineapple.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Pineapple",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/7/74/%E0%B4%95%E0%B5%88%E0%B4%A4%E0%B4%9A%E0%B5%8D%E0%B4%9A%E0%B4%95%E0%B5%8D%E0%B4%95.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/watermelon.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Watermelon",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/4/47/Taiwan_2009_Tainan_City_Organic_Farm_Watermelon_FRD_7962.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/beans.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Black-eyed_pea",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Black-eyed_peas_close_up.jpg/3840px-Black-eyed_peas_close_up.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+ },
+ "products/rice.jpg": {
+  "source": "https://en.wikipedia.org/wiki/White_rice",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/Half_a_cup_of_rice._Brown_rice_is_the_best_choice.JPG/3840px-Half_a_cup_of_rice._Brown_rice_is_the_best_choice.JPG?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+ },
+ "products/semolina.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Semolina",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/c/c6/Sa_semolina_far.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/bleach.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Bleach",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/d/d3/Clorox_Bleach_products.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/dish-soap.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Dishwashing_liquid",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/7/71/Afwasmiddel.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/detergent.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Laundry_detergent",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/2/2a/Pralni_pra%C5%A1ek.JPG?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/scouring.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Cleaning_agent",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/e/e7/Vacuum_Clean.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/cutting-board.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Cutting_board",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/7/74/Chopping_Board.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/frying-pan.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Frying_pan",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/5/5c/Pfanne_%28Edelstahl%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/pots.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Cookware_and_bakeware",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/7/7a/Pans_%28113563802%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/spoons.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Wooden_spoon",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Cuiller_en_bois_-_%C3%A9chelle.jpg/3840px-Cuiller_en_bois_-_%C3%A9chelle.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+ },
+ "products/crayfish.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Crayfish",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/8/8d/Paranephrops.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/nutmeg.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Monodora_myristica",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/8/80/Curtis%27s_Botanical_Magazine%2C_Plate_3059_%28Volume_58%2C_1831%29.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/locust-bean.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Parkia_biglobosa",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/1/1b/Parkia_biglobosa_Burkina.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/uda.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Xylopia_aethiopica",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/1/14/Xylopia_aethiopica_leaf.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/uziza.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Piper_guineense",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/e/ef/Piper_clusii_samples.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/bread.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Bread",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/c/c7/Korb_mit_Br%C3%B6tchen.JPG?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/cake.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Cake",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/0/04/Pound_layer_cake.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/toothpaste.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Toothpaste",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/4/49/Toothpasteonbrush.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/soap.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Soap",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/9/9b/Handmade_soap_cropped_and_simplified.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/body-wash.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Shower_gel",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/d/d4/Shower_Gel.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/toothbrush.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Toothbrush",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/c/c3/Toothbrush_20050716_004.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/jollof.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Jollof_rice",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Jollof_Rice_with_Stew.jpg/3840px-Jollof_Rice_with_Stew.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+ },
+ "products/pepper-soup.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Peppersoup",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Assorted_meat_pepper_soup_at_Lagos_Island.jpg/3840px-Assorted_meat_pepper_soup_at_Lagos_Island.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+ },
+ "products/suya.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Suya",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/a/ab/SuyavarietiesTX.JPG?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/biscuits.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Digestive_biscuit",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/4/47/Digestive_biscuits.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/sausage-roll.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Sausage_roll",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Sausage_roll_-_One_Market%2C_One_Garden_Brighton_%28cropped%29.jpg/1920px-Sausage_roll_-_One_Market%2C_One_Garden_Brighton_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+ },
+ "products/chips.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Potato_chips",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/6/69/Potato-Chips.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/ginger.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Ginger",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/1/18/Koeh-146-no_text.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/basket.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Basket",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/1/18/Baskets_in_Haikou_03.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/shoe-rack.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Shelf_(storage)",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/4/40/Atifells_de_cuina_andalusins%2C_Museu_Arqueol%C3%B2gic_Municipal_d%27Alcoi.JPG?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/containers.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Food_storage_container",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/7/7c/Bundesarchiv_B_145_Bild-F038807-0002%2C_Wolfsburg%2C_VW_Autowerk.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/cucumber.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Cucumber",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/9/96/ARS_cucumber.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/onions.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Onion",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/a/a2/Mixed_onions.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/scotch-bonnet.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Scotch_bonnet",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/9/97/Scotch_bonnet_chili_pepper.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/tomatoes.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Tomato",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/8/89/Tomato_je.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/ugu.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Telfairia_occidentalis",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/5/51/Telfairia_occidentalis.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "stores/grocery.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Grocery_store",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/Westside_Market_in_Manhattan%2C_NYC_IMG_5615.JPG/3840px-Westside_Market_in_Manhattan%2C_NYC_IMG_5615.JPG?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+ },
+ "stores/market.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Marketplace",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/5/57/The_Moorish_Bazaar.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "stores/supermarket.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Supermarket",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Stop%26Shop.jpg/3840px-Stop%26Shop.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+ },
+ "stores/butcher.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Butcher",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Wiki_Loves_Mett_P1020898.JPG/3840px-Wiki_Loves_Mett_P1020898.JPG?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+ },
+ "stores/greengrocer.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Greengrocer",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/9/97/Gourock_greengrocers_ext.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "stores/bakery.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Bakery",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Belgium_2013_%2811620905224%29.jpg/3840px-Belgium_2013_%2811620905224%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+ },
+ "stores/convenience.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Convenience_store",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/Convenience_store_interior.jpg/3840px-Convenience_store_interior.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+ },
+ "stores/spices.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Spice",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/b/b6/Spices1.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "products/deodorant.jpg": {
+  "source": "https://en.wikipedia.org/wiki/Shower_gel",
+  "file": "https://upload.wikimedia.org/wikipedia/commons/d/d4/Shower_Gel.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ }
+}

@@ -17,7 +17,7 @@ const ONBOARDING_KEY = 'onboarding_completed';
 const Stack = createNativeStackNavigator();
 
 export const RootNavigator: React.FC = () => {
-  const { isAuthenticated, isLoading, loadUser, user } = useAuthStore();
+  const { isAuthenticated, isLoading, loadUser, user, isGuest } = useAuthStore();
   const navigationRef = useRef<NavigationContainerRef<any>>(null);
 
   // Deep-link handler for push notification taps
@@ -96,6 +96,16 @@ export const RootNavigator: React.FC = () => {
         {user.role === 'RIDER' && (
           <Stack.Screen name="Rider" component={RiderNavigator} />
         )}
+      </Stack.Navigator>
+    );
+  }
+
+  // Guest mode — full customer browsing without an account. Account-based
+  // screens (orders, profile, checkout) show a sign-in prompt instead.
+  if (isGuest) {
+    return (
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Customer" component={CustomerNavigator} />
       </Stack.Navigator>
     );
   }

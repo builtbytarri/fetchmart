@@ -30,7 +30,7 @@ type Props = {
 };
 
 export const AuthLandingScreen: React.FC<Props> = ({ navigation }) => {
-  const { signInWithGoogle, signInWithApple, isLoading } = useAuthStore();
+  const { signInWithGoogle, signInWithApple, isLoading, continueAsGuest } = useAuthStore();
   const [appleAvailable, setAppleAvailable] = useState(false);
 
   useEffect(() => {
@@ -89,6 +89,12 @@ export const AuthLandingScreen: React.FC<Props> = ({ navigation }) => {
 
         <TouchableOpacity style={styles.signInButton} onPress={handleSignIn}>
           <Text style={styles.signInText}>Sign in</Text>
+        </TouchableOpacity>
+
+        {/* Catalogue browsing is open to everyone (Guideline 5.1.1(v)); an
+            account is only needed to order. */}
+        <TouchableOpacity style={styles.guestButton} onPress={continueAsGuest}>
+          <Text style={styles.guestText}>Browse as guest</Text>
         </TouchableOpacity>
 
         <View style={styles.dividerContainer}>
@@ -196,6 +202,13 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 16,
     fontWeight: '500',
+  },
+  guestButton: { alignItems: 'center', paddingVertical: 10 },
+  guestText: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 14,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
   dividerContainer: {
     flexDirection: 'row',

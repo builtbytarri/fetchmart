@@ -147,6 +147,19 @@ export const CartScreen: React.FC<Props> = ({ navigation }) => {
   const handleCheckout = async () => {
     if (!storeId || items.length === 0) return;
 
+    // Guests can build a cart, but placing an order needs an account.
+    if (useAuthStore.getState().isGuest) {
+      Alert.alert(
+        'Sign in to order',
+        'Create a free account or sign in to place your order. Your cart will be kept.',
+        [
+          { text: 'Not now', style: 'cancel' },
+          { text: 'Sign in', onPress: () => useAuthStore.getState().exitGuest() },
+        ],
+      );
+      return;
+    }
+
     setIsLoading(true);
     try {
       // Single atomic call: creates order + initiates Flutterwave.

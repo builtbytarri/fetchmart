@@ -1,5 +1,7 @@
 import { create } from 'zustand';
+import { Alert } from 'react-native';
 import { storesApi } from '../api';
+import { useAuthStore } from './authStore';
 
 interface FavouritesState {
   ids: Set<string>;
@@ -15,6 +17,7 @@ export const useFavouritesStore = create<FavouritesState>((set, get) => ({
   isLoaded: false,
 
   load: async () => {
+    if (useAuthStore.getState().isGuest) return;
     try {
       const ids = await storesApi.getFavouriteIds();
       set({ ids: new Set(ids), isLoaded: true });
@@ -24,6 +27,13 @@ export const useFavouritesStore = create<FavouritesState>((set, get) => ({
   },
 
   toggle: async (storeId: string) => {
+    if (useAuthStore.getState().isGuest) {
+      Alert.alert('Sign in to save favourites', 'Create a free account to keep a list of your favourite stores.', [
+        { text: 'Not now', style: 'cancel' },
+        { text: 'Sign in', onPress: () => useAuthStore.getState().exitGuest() },
+      ]);
+      return;
+    }
     const current = get().ids;
 
     // Optimistic update

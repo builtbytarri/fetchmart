@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuthStore } from '../../store';
 import { usersApi } from '../../api';
+import { GuestGate } from '../../components';
 import { COLORS, SPACING } from '../../constants/config';
 
 type Props = {
@@ -18,7 +19,9 @@ type Props = {
 };
 
 export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
-  const { user, logout } = useAuthStore();
+  const { user, logout, isGuest } = useAuthStore();
+  if (isGuest) return <GuestGate feature="profile" />;
+
 
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
