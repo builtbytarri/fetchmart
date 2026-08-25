@@ -265,6 +265,7 @@ export class StoresService {
         latitude: true,
         longitude: true,
         isOpen: true,
+        imageUrl: true,
         openingHours: true,
         createdAt: true,
         updatedAt: true,
