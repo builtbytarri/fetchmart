@@ -249,6 +249,9 @@ export class StoresService {
       description: store.description,
       distance: Math.round(store.distance * 100) / 100,
       isOpen: store.isOpen,
+      imageUrl: store.imageUrl,
+      latitude: store.latitude,
+      longitude: store.longitude,
     }));
   }
 
