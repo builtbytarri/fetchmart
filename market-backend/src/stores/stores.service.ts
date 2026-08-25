@@ -222,6 +222,7 @@ export class StoresService {
         latitude: true,
         longitude: true,
         isOpen: true,
+        imageUrl: true,
       },
     });
 
@@ -335,7 +336,7 @@ export class StoresService {
       where: { userId, store: { isVerified: true, ...VISIBLE_STORE } },
       include: {
         store: {
-          select: { id: true, name: true, description: true, latitude: true, longitude: true, isOpen: true },
+          select: { id: true, name: true, description: true, latitude: true, longitude: true, isOpen: true, imageUrl: true },
         },
       },
       orderBy: { createdAt: 'desc' },
@@ -358,7 +359,7 @@ export class StoresService {
       orderBy: { sortOrder: 'asc' },
       include: {
         store: {
-          select: { id: true, name: true, description: true, latitude: true, longitude: true, isOpen: true, isVerified: true },
+          select: { id: true, name: true, description: true, latitude: true, longitude: true, isOpen: true, isVerified: true, imageUrl: true },
         },
       },
     });
