@@ -97,7 +97,7 @@ export const TermsConditionsScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>10. Contact</Text>
             <Text style={styles.sectionText}>
-              For questions about these terms, please contact us at legal@fetchmart.com.
+              For questions about these terms, please contact us at support@fetchmart.com.ng.
             </Text>
           </View>
         </View>

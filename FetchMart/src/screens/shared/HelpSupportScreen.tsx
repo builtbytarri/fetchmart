@@ -17,14 +17,18 @@ type Props = {
   navigation: NativeStackNavigationProp<any>;
 };
 
+// Keep these in step with the contact details published on fetchmart.com.ng.
+const SUPPORT_EMAIL = 'support@fetchmart.com.ng';
+const SUPPORT_PHONE = '+2347061067906';
+
 export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
   const handleContact = (type: 'email' | 'phone' | 'chat') => {
     switch (type) {
       case 'email':
-        Linking.openURL('mailto:support@fetchmart.com');
+        Linking.openURL(`mailto:${SUPPORT_EMAIL}`);
         break;
       case 'phone':
-        Linking.openURL('tel:+2341234567890');
+        Linking.openURL(`tel:${SUPPORT_PHONE}`);
         break;
       case 'chat':
         Alert.alert('Coming Soon', 'Live chat support coming soon!');
@@ -129,7 +133,7 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.section}>
           <TouchableOpacity
             style={styles.reportButton}
-            onPress={() => Alert.alert('Report Issue', 'Please email us at support@fetchmart.com with details of your issue.')}
+            onPress={() => Alert.alert('Report Issue', `Please email us at ${SUPPORT_EMAIL} with details of your issue.`)}
           >
             <Ionicons name="warning-outline" size={20} color={COLORS.error} />
             <Text style={styles.reportButtonText}>Report an Issue</Text>
