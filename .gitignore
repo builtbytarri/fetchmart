@@ -1,3 +1,18 @@
-
 # Claude Code scratch worktrees
 .claude/worktrees/
+
+# Secrets — never commit these, at any depth in the repo.
+google-service-account.json
+**/google-service-account.json
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p8
+*.p12
+*.jks
+*.mobileprovision
+
+# OS noise
+.DS_Store
