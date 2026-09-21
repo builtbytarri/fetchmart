@@ -1,6 +1,8 @@
 # Production stack — designed to sit ALONGSIDE an existing Caddy on the same box.
 #
-# Postgres is on Neon, so only the API and Redis run here.
+# Postgres, Redis and the API all run here. Postgres moved in from Neon after
+# the free tier's compute quota ran out; the database is now this box's
+# responsibility, including backups (see deploy/backup-db.sh).
 #
 # Redis is not optional: BullMQ drives the store-accept timeout and the
 # rider-offer expiry. Without it a paid order sits forever with no auto-cancel
@@ -9,6 +11,9 @@
 # Note there is no `ports:` on the api service. Caddy already owns 80/443 and
 # reaches this container by name over the shared `web` network. Publishing 3000
 # on the host would let anyone bypass TLS by hitting the IP directly.
+#
+# The database has no `ports:` either, and sits only on `internal`. It is
+# reachable from the api container as `db:5432` and from nowhere else.
 
 services:
   api:
@@ -18,21 +23,46 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      # Redis lives on the internal network under its service name. This
-      # overrides whatever localhost value .env carries for local development.
+      # Redis and Postgres live on the internal network under their service
+      # names. These override whatever localhost/Neon values .env carries.
       REDIS_URL: redis://redis:6379
+      DATABASE_URL: postgresql://fetchmart:${POSTGRES_PASSWORD}@db:5432/fetchmart
     depends_on:
       redis:
+        condition: service_healthy
+      db:
         condition: service_healthy
     networks:
       - internal
       - web
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:3000/health"]
+      # Liveness only. /health (readiness) also queries Postgres and must not be
+      # polled this often — that is exactly what exhausted the Neon quota.
+      test: ["CMD", "curl", "-fsS", "http://localhost:3000/health/live"]
       interval: 30s
       timeout: 5s
       start_period: 40s
       retries: 3
+
+  db:
+    image: postgres:16-alpine
+    container_name: fetchmart-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: fetchmart
+      POSTGRES_DB: fetchmart
+      # Set in .env on the host, next to this file. Never committed.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    networks:
+      # Deliberately not on `web` — nothing outside this stack should reach it.
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fetchmart -d fetchmart"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
@@ -60,3 +90,4 @@ networks:
 
 volumes:
   redis-data:
+  pg-data:

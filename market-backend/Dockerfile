@@ -47,8 +47,9 @@ COPY --from=builder --chown=app:app /app/public      ./public
 USER app
 EXPOSE 3000
 
-# Compose uses this to hold traffic back until the app is genuinely serving.
+# Liveness only — /health/live never touches the database. Compose overrides
+# this anyway, but keep the two in agreement.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-  CMD curl -fsS http://localhost:3000/health || exit 1
+  CMD curl -fsS http://localhost:3000/health/live || exit 1
 
 CMD ["node", "dist/src/main.js"]
