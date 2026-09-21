@@ -20,8 +20,6 @@
       "usesAppleSignIn": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "FetchMart uses your location to find nearby stores and deliver to your address.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "FetchMart uses your location in the background so riders can update their position during deliveries.",
-        "NSLocationAlwaysUsageDescription": "FetchMart uses your location in the background so riders can update their position during deliveries.",
         "NSPhotoLibraryUsageDescription": "FetchMart needs access to your photos so you can add pictures of your store and the products you sell.",
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -37,7 +35,6 @@
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_BACKGROUND_LOCATION",
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE"
       ]
