@@ -45,7 +45,13 @@
     "plugins": [
       "@rnmapbox/maps",
       "expo-apple-authentication",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.116879463390-del9glha156g88m8l8dq53sq71j9ckoi"
+        }
+      ]
     ],
     "extra": {
       "eas": {

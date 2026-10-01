@@ -97,11 +97,15 @@ export const AuthLandingScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={styles.guestText}>Browse as guest</Text>
         </TouchableOpacity>
 
-        <View style={styles.dividerContainer}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>or continue with</Text>
-          <View style={styles.dividerLine} />
-        </View>
+        {/* Both providers can be unavailable — Google without client IDs, Apple
+            off iOS — which would otherwise leave the divider over empty space. */}
+        {(GOOGLE_ENABLED || (appleAvailable && Platform.OS === 'ios')) && (
+          <View style={styles.dividerContainer}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or continue with</Text>
+            <View style={styles.dividerLine} />
+          </View>
+        )}
 
         <View style={styles.socialContainer}>
           {/* Apple button — iOS only, per Apple's Human Interface Guidelines */}

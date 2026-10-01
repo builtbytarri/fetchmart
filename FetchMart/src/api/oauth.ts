@@ -1,25 +1,19 @@
 /**
- * OAuth — Apple Sign In is live; Google is stubbed.
+ * OAuth implementation backed by the native Google and Apple SDKs.
  *
- * Apple works with no extra credentials: the client gets an identity token from
- * the OS and the backend verifies it against Apple's JWKs (see oauth.service.ts).
- * The only requirements are `usesAppleSignIn` in app.json, the "Sign In with
- * Apple" capability on the App ID, and APPLE_BUNDLE_ID set on the server.
- *
- * Google needs OAuth client IDs from Google Cloud Console. Until those exist the
- * @react-native-google-signin plugin is deliberately left out of app.json — its
- * placeholder `iosUrlScheme` gets baked into Info.plist and App Store Connect
- * rejects the binary (ITMS-90158). To enable Google later:
- *   1. Create iOS / Android / Web OAuth client IDs, put them in .env
- *   2. Re-add the plugin to app.json with the real reversed iOS client ID
- *   3. Swap the googleAuth export below for the one in oauth.native-ready.ts
- *
- * AuthLandingScreen checks availability before rendering either button, so the
- * Google button stays hidden while it is stubbed.
+ * Google sign-in only works in a build that includes the google-signin config
+ * plugin (see app.json) and has EXPO_PUBLIC_GOOGLE_*_CLIENT_ID set — those live
+ * in EAS environment variables, not in the repo. The previous no-op stub is
+ * kept as oauth.stub.ts for local work without those credentials.
  */
 
 import { Platform } from 'react-native';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import {
+  GOOGLE_OAUTH_IOS_CLIENT_ID,
+  GOOGLE_OAUTH_WEB_CLIENT_ID,
+} from '../constants/config';
 
 export interface GoogleAuthResult { idToken: string }
 export interface AppleAuthResult {
@@ -28,13 +22,35 @@ export interface AppleAuthResult {
   lastName?: string;
 }
 
+let _configured = false;
+function ensureConfigured() {
+  if (_configured) return;
+  GoogleSignin.configure({
+    iosClientId: GOOGLE_OAUTH_IOS_CLIENT_ID,
+    webClientId: GOOGLE_OAUTH_WEB_CLIENT_ID,
+    offlineAccess: false,
+    scopes: ['profile', 'email'],
+  });
+  _configured = true;
+}
+
 export const googleAuth = {
-  isAvailable: () => false as boolean,
+  isAvailable: () => true,
+
   async signIn(): Promise<GoogleAuthResult> {
-    throw new Error('Google Sign-In is not configured yet.');
+    ensureConfigured();
+    await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+    const result = await GoogleSignin.signIn();
+    const idToken = (result as any)?.data?.idToken ?? (result as any)?.idToken ?? null;
+    if (!idToken) throw new Error('Google did not return an idToken');
+    return { idToken };
   },
-  async signOut() {},
-  statusCodes: { SIGN_IN_CANCELLED: -1, IN_PROGRESS: -2, PLAY_SERVICES_NOT_AVAILABLE: -3 },
+
+  async signOut() {
+    try { await GoogleSignin.signOut(); } catch {}
+  },
+
+  statusCodes,
 };
 
 export const appleAuth = {
