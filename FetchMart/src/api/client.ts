@@ -3,6 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 import { API_BASE_URL } from '../constants/config';
 
 const TOKEN_KEY = 'auth_tokens';
+const REFRESH_PATH = '/auth/refresh';
 
 interface AuthTokens {
   accessToken: string;
@@ -12,7 +13,12 @@ interface AuthTokens {
 class ApiClient {
   private client: AxiosInstance;
   private isRefreshing = false;
-  private refreshSubscribers: ((token: string) => void)[] = [];
+  // Requests that arrived mid-refresh. Every entry MUST be settled — resolved
+  // with a fresh token or rejected — or the caller's promise hangs forever.
+  private refreshSubscribers: {
+    resolve: (token: string) => void;
+    reject: (error: unknown) => void;
+  }[] = [];
 
   constructor() {
     this.client = axios.create({
@@ -24,6 +30,13 @@ class ApiClient {
     });
 
     this.setupInterceptors();
+  }
+
+  /** Settle every queued request with a rejection so no caller hangs. */
+  private rejectRefreshSubscribers(error: unknown) {
+    const waiting = this.refreshSubscribers;
+    this.refreshSubscribers = [];
+    waiting.forEach(({ reject }) => reject(error));
   }
 
   private setupInterceptors() {
@@ -43,12 +56,25 @@ class ApiClient {
       async (error: AxiosError) => {
         const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
+        // A 401 on the refresh call itself must never be retried or queued: it
+        // would wait on the very request that is failing, and nothing would
+        // ever settle. Clear the session and let the caller see the error.
+        if (originalRequest?.url?.includes(REFRESH_PATH)) {
+          await this.clearTokens();
+          this.rejectRefreshSubscribers(error);
+          this.isRefreshing = false;
+          return Promise.reject(error);
+        }
+
         if (error.response?.status === 401 && !originalRequest._retry) {
           if (this.isRefreshing) {
-            return new Promise((resolve) => {
-              this.refreshSubscribers.push((token: string) => {
-                originalRequest.headers.Authorization = `Bearer ${token}`;
-                resolve(this.client(originalRequest));
+            return new Promise((resolve, reject) => {
+              this.refreshSubscribers.push({
+                resolve: (token: string) => {
+                  originalRequest.headers.Authorization = `Bearer ${token}`;
+                  resolve(this.client(originalRequest));
+                },
+                reject,
               });
             });
           }
@@ -58,22 +84,31 @@ class ApiClient {
 
           try {
             const tokens = await this.getTokens();
-            if (tokens?.refreshToken) {
-              const response = await this.client.post('/auth/refresh', {
-                refreshToken: tokens.refreshToken,
-              });
-              const newTokens: AuthTokens = response.data;
-              await this.setTokens(newTokens);
-
-              this.refreshSubscribers.forEach((callback) => callback(newTokens.accessToken));
-              this.refreshSubscribers = [];
-
-              originalRequest.headers.Authorization = `Bearer ${newTokens.accessToken}`;
-              return this.client(originalRequest);
+            if (!tokens?.refreshToken) {
+              // Nothing to refresh with — fail fast rather than hang.
+              await this.clearTokens();
+              this.rejectRefreshSubscribers(error);
+              return Promise.reject(error);
             }
-          } catch (refreshError) {
-            await this.clearTokens();
+
+            const response = await this.client.post(REFRESH_PATH, {
+              refreshToken: tokens.refreshToken,
+            });
+            const newTokens: AuthTokens = response.data;
+            await this.setTokens(newTokens);
+
+            const waiting = this.refreshSubscribers;
             this.refreshSubscribers = [];
+            waiting.forEach(({ resolve }) => resolve(newTokens.accessToken));
+
+            originalRequest.headers.Authorization = `Bearer ${newTokens.accessToken}`;
+            return this.client(originalRequest);
+          } catch (refreshError) {
+            // The refresh token is expired or rejected. Drop the session and
+            // settle everyone waiting, so callers fall through to signed-out.
+            await this.clearTokens();
+            this.rejectRefreshSubscribers(refreshError);
+            return Promise.reject(refreshError);
           } finally {
             this.isRefreshing = false;
           }

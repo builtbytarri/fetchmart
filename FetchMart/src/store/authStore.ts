@@ -134,7 +134,10 @@ export const useAuthStore = create<AuthState>((set) => ({
         set({ isLoading: false });
       }
     } catch {
-      set({ isLoading: false });
+      // Expired or rejected session. Drop any stored tokens so the next launch
+      // starts clean, and fall through to signed-out rather than retrying.
+      await authApi.logout().catch(() => {});
+      set({ user: null, isAuthenticated: false, isLoading: false });
     }
   },
 
