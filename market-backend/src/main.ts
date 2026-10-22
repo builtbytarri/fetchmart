@@ -18,9 +18,25 @@ async function bootstrap() {
 
   const configService = app.get(AppConfigService);
 
-  // Enable CORS for admin frontend
+  // Browser origins allowed to call the API. The mobile apps are native and
+  // are not subject to CORS, so this list only governs the admin site.
+  // Override per environment with CORS_ORIGINS (comma-separated).
+  const defaultCorsOrigins = [
+    'https://fetchmart.com.ng',
+    'https://www.fetchmart.com.ng',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3004',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001',
+    'http://127.0.0.1:3004',
+  ];
+  const corsOrigins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
+    : defaultCorsOrigins;
+
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3004', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001', 'http://127.0.0.1:3004', 'https://fetchmart-nine.vercel.app'],
+    origin: corsOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
